@@ -24,6 +24,7 @@ class Mover(Node):
         super().__init__('mover')
         self.publisher_ = self.create_publisher(geometry_msgs.msg.Twist,'cmd_vel',10)
 
+# function to read keyboard input
     def readKey(self):
         twist = geometry_msgs.msg.Twist()
         try:
@@ -53,14 +54,15 @@ class Mover(Node):
                     twist.linear.x = 0.0
                     twist.angular.z = -1.0
 
-                # log the info
-                self.get_logger().info(cmd_char)
+                # start the movement
                 self.publisher_.publish(twist)
                 
         except Exception as e:
             print(e)
             
+		# Ctrl-c detected
         finally:
+        	# stop moving
             twist.linear.x = 0.0
             twist.angular.z = 0.0
             self.publisher_.publish(twist)
@@ -71,12 +73,12 @@ def main(args=None):
 
     mover = Mover()
     mover.readKey()
-    rclpy.spin(mover)
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
     mover.destroy_node()
+    
     rclpy.shutdown()
 
 
