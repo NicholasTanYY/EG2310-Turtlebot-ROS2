@@ -22,6 +22,7 @@ setup(
         'console_scripts': [
             'r2mover = auto_nav.r2mover:main',
             'r2moverotate = auto_nav.r2moverotate:main',
+            'r2scanner = auto_nav.r2scanner:main',
         ],
     },
 )
