@@ -36,11 +36,11 @@ class Occupy(Node):
     def listener_callback(self, msg):
         # create numpy array
         occdata = np.array([msg.data])
-		# compute histogram to identify percent of bins with -1
-		occ_counts = np.histogram(occdata,occ_bins)
-		# calculate total number of bins
-		total_bins = msg.info.width * msg.info.height
-		# log the info
+        # compute histogram to identify percent of bins with -1
+        occ_counts = np.histogram(occdata,occ_bins)
+        # calculate total number of bins
+        total_bins = msg.info.width * msg.info.height
+        # log the info
         self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0][0], occ_counts[0][1], occ_counts[0][2], total_bins))
 
 
