@@ -17,6 +17,8 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from nav_msgs.msg import OccupancyGrid
 import numpy as np
+import matplotlib.pyplot as plt
+from PIL import Image
 
 # constants
 occ_bins = [-1, 0, 100, 101]
@@ -32,6 +34,7 @@ class Occupy(Node):
             self.listener_callback,
             qos_profile_sensor_data)
         self.subscription  # prevent unused variable warning
+        # occdata = np.array([])
 
     def listener_callback(self, msg):
         # create numpy array
@@ -42,12 +45,31 @@ class Occupy(Node):
         total_bins = msg.info.width * msg.info.height
         # log the info
         self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0][0], occ_counts[0][1], occ_counts[0][2], total_bins))
+        # make occdata go from 0 to 2 so we can use uint8, which won't be possible if we have
+        # negative values
+        # first make negative values 0
+        occ2 = occdata + 1
+        # now change all the values above 1 to 2
+        occ3 = (occ2>1).choose(occ2,2)
+        # convert into 2D array using column order
+        odata = np.uint8(occ3.reshape(msg.info.width,msg.info.height,order='F'))
+        # create image from 2D array using PIL
+        img = Image.fromarray(odata)
+        # show the image using grayscale map
+        plt.imshow(img,cmap='gray')
+        plt.draw_all()
+        # pause to make sure the plot gets created
+        plt.pause(0.00000000001)
 
 
 def main(args=None):
     rclpy.init(args=args)
 
     occupy = Occupy()
+
+    # create matplotlib figure
+    plt.ion()
+    plt.show()
 
     rclpy.spin(occupy)
 
