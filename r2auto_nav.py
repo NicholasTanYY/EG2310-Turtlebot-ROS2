@@ -179,13 +179,13 @@ class AutoNav(Node):
         # time.sleep(1)
         self.publisher_.publish(twist)
 
-        if laser_range.size != 0:
+        if self.laser_range.size != 0:
             # use nanargmax as there are nan's in laser_range added to replace 0's
-            lr2i = np.nanargmax(laser_range)
+            lr2i = np.nanargmax(self.laser_range)
         else:
             lr2i = 0
 
-        self.get_logger().info('Picked direction: %d %f m' % (lr2i, laser_range[lr2i]))
+        self.get_logger().info('Picked direction: %d %f m' % (lr2i, self.laser_range[lr2i]))
 
         # rotate to that direction
         self.rotatebot(float(lr2i))
@@ -224,7 +224,7 @@ class AutoNav(Node):
                 if self.laser_range.size != 0:
                     # check distances in front of TurtleBot and find values less
                     # than stop_distance
-                    lri = (laser_range[front_angles]<float(stop_distance)).nonzero()
+                    lri = (self.laser_range[front_angles]<float(stop_distance)).nonzero()
                     self.get_logger().info('Distances: %s' % str(lri))
                 else:
                     lri[0] = []
@@ -258,8 +258,8 @@ def main(args=None):
     auto_nav.mover()
 
     # create matplotlib figure
-    plt.ion()
-    plt.show()
+    # plt.ion()
+    # plt.show()
 
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
