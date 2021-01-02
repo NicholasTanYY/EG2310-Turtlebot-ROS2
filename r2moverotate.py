@@ -24,7 +24,7 @@ import numpy as np
 
 # constants
 rotatechange = 0.1
-speedchange = 0.1
+speedchange = 0.05
 
 
 # code from https://automaticaddison.com/how-to-convert-a-quaternion-into-euler-angles-in-python/
