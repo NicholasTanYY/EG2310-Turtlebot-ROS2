@@ -24,6 +24,7 @@ setup(
             'r2moverotate = auto_nav.r2moverotate:main',
             'r2scanner = auto_nav.r2scanner:main',
             'r2occupancy = auto_nav.r2occupancy:main',
+            'r2auto_nav = auto_nav.r2auto_nav:main',
         ],
     },
 )
