@@ -225,10 +225,10 @@ class AutoNav(Node):
                     lri = (self.laser_range[front_angles]<float(stop_distance)).nonzero()
                     self.get_logger().info('Distances: %s' % str(lri))
                 else:
-                    lri[0] = []
+                    lri = np.array([])
 
                 # if the list is not empty
-                if(len(lri[0])>0):
+                if(len(lri)>0):
                     # stop moving
                     self.stopbot()
                     self.get_logger().info('Stop!')
