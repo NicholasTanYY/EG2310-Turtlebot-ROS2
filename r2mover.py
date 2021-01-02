@@ -20,7 +20,7 @@ import geometry_msgs.msg
 
 # constants
 rotatechange = 0.1
-speedchange = 0.1
+speedchange = 0.05
 
 
 class Mover(Node):
