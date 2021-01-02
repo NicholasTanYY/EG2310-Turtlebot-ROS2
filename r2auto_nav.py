@@ -184,13 +184,14 @@ class AutoNav(Node):
             self.get_logger().info('Picked direction: %d %f m' % (lr2i, self.laser_range[lr2i]))
         else:
             lr2i = 0
-
+            self.get_logger().info('No data!')
 
         # rotate to that direction
         self.rotatebot(float(lr2i))
 
         # start moving
         self.get_logger().info('Start moving')
+        twist = Twist()
         twist.linear.x = speedchange
         twist.angular.z = 0.0
         # not sure if this is really necessary, but things seem to work more
