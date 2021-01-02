@@ -23,8 +23,8 @@ import cmath
 import numpy as np
 
 # constants
-rotate_speed = 0.1
-linear_speed = 0.1
+rotatechange = 0.1
+speedchange = 0.1
 
 
 # code from https://automaticaddison.com/how-to-convert-a-quaternion-into-euler-angles-in-python/
@@ -113,7 +113,7 @@ class Mover(Node):
         # set linear speed to zero so the TurtleBot rotates on the spot
         twist.linear.x = 0.0
         # set the direction to rotate
-        twist.angular.z = c_change_dir * rotate_speed
+        twist.angular.z = c_change_dir * speedchange
         # start rotation
         self.publisher_.publish(twist)
 
@@ -162,20 +162,20 @@ class Mover(Node):
                         twist.angular.z = 0.0
                     elif cmd_char == 'w':
                         # move forward
-                        twist.linear.x = 0.1
+                        twist.linear.x += speedchange
                         twist.angular.z = 0.0
                     elif cmd_char == 'x':
                         # move backward
-                        twist.linear.x = -0.1
+                        twist.linear.x -= speedchange
                         twist.angular.z = 0.0
                     elif cmd_char == 'a':
                         # turn counter-clockwise
                         twist.linear.x = 0.0
-                        twist.angular.z = 1.0
+                        twist.angular.z += rotatechange
                     elif cmd_char == 'd':
                         # turn clockwise
                         twist.linear.x = 0.0
-                        twist.angular.z = -1.0
+                        twist.angular.z -= rotatechange
                         
                     # start the movement
                     self.publisher_.publish(twist)
