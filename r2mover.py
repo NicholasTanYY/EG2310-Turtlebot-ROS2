@@ -18,6 +18,11 @@ import rclpy
 from rclpy.node import Node
 import geometry_msgs.msg
 
+# constants
+rotatechange = 0.1
+speedchange = 0.1
+
+
 class Mover(Node):
     def __init__(self):
         super().__init__('mover')
@@ -38,20 +43,20 @@ class Mover(Node):
                     twist.angular.z = 0.0
                 elif cmd_char == 'w':
                     # move forward
-                    twist.linear.x = 0.1
+                    twist.linear.x += speedchange
                     twist.angular.z = 0.0
                 elif cmd_char == 'x':
                     # move backward
-                    twist.linear.x = -0.1
+                    twist.linear.x -= speedchange
                     twist.angular.z = 0.0
                 elif cmd_char == 'a':
                     # turn counter-clockwise
                     twist.linear.x = 0.0
-                    twist.angular.z = 1.0
+                    twist.angular.z += rotatechange
                 elif cmd_char == 'd':
                     # turn clockwise
                     twist.linear.x = 0.0
-                    twist.angular.z = -1.0
+                    twist.angular.z -= rotatechange
 
                 # start the movement
                 self.publisher_.publish(twist)
