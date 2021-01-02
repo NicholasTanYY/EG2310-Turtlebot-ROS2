@@ -181,10 +181,10 @@ class AutoNav(Node):
         if self.laser_range.size != 0:
             # use nanargmax as there are nan's in laser_range added to replace 0's
             lr2i = np.nanargmax(self.laser_range)
+            self.get_logger().info('Picked direction: %d %f m' % (lr2i, self.laser_range[lr2i]))
         else:
             lr2i = 0
 
-        self.get_logger().info('Picked direction: %d %f m' % (lr2i, self.laser_range[lr2i]))
 
         # rotate to that direction
         self.rotatebot(float(lr2i))
