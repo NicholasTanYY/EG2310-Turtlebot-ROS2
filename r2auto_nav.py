@@ -143,7 +143,7 @@ class AutoNav(Node):
         # set linear speed to zero so the TurtleBot rotates on the spot
         twist.linear.x = 0.0
         # set the direction to rotate
-        twist.angular.z = c_change_dir * speedchange
+        twist.angular.z = c_change_dir * rotatechange
         # start rotation
         self.publisher_.publish(twist)
 
@@ -192,7 +192,7 @@ class AutoNav(Node):
 
         # start moving
         self.get_logger().info('Start moving')
-        twist.linear.x = linear_speed
+        twist.linear.x = speedchange
         twist.angular.z = 0.0
         # not sure if this is really necessary, but things seem to work more
         # reliably with this
@@ -211,8 +211,6 @@ class AutoNav(Node):
         twist = Twist()
 
         try:
-            # save start time
-            start_time = time.time()
             # initialize variable to write elapsed time to file
             # contourCheck = 1
 
