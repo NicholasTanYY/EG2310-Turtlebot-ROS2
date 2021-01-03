@@ -22,10 +22,11 @@ from nav_msgs.msg import OccupancyGrid
 import numpy as np
 import math
 import cmath
+import time
 
 # constants
 rotatechange = 0.1
-speedchange = 0.1
+speedchange = 0.05
 occ_bins = [-1, 0, 100, 101]
 stop_distance = 0.25
 front_angle = 30
@@ -95,37 +96,41 @@ class AutoNav(Node):
         self.scan_subscription  # prevent unused variable warning
         self.laser_range = np.array([])
 
+
     def odom_callback(self, msg):
-        self.get_logger().info('In odom_callback')
+        # self.get_logger().info('In odom_callback')
         orientation_quat =  msg.pose.pose.orientation
         self.roll, self.pitch, self.yaw = euler_from_quaternion(orientation_quat.x, orientation_quat.y, orientation_quat.z, orientation_quat.w)
 
+
     def occ_callback(self, msg):
-        self.get_logger().info('In occ_callback')
+        # self.get_logger().info('In occ_callback')
         # create numpy array
         msgdata = np.array(msg.data)
         # compute histogram to identify percent of bins with -1
-        occ_counts = np.histogram(msgdata,occ_bins)
+        # occ_counts = np.histogram(msgdata,occ_bins)
         # calculate total number of bins
-        total_bins = msg.info.width * msg.info.height
+        # total_bins = msg.info.width * msg.info.height
         # log the info
-        rospy.loginfo('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i', occ_counts[0][0], occ_counts[0][1], occ_counts[0][2], total_bins)
+        # self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0][0], occ_counts[0][1], occ_counts[0][2], total_bins))
 
         # make msgdata go from 0 instead of -1, reshape into 2D
         oc2 = msgdata + 1
         # reshape to 2D array using column order
         self.occdata = np.uint8(oc2.reshape(msg.info.height,msg.info.width,order='F'))
 
+
     def scan_callback(self, msg):
-        self.get_logger().info('In scan_callback')
+        # self.get_logger().info('In scan_callback')
         # create numpy array
         self.laser_range = np.array(msg.ranges)
         # replace 0's with nan
         self.laser_range[self.laser_range==0] = np.nan
 
+
     # function to rotate the TurtleBot
     def rotatebot(self, rot_angle):
-        self.get_logger().info('In rotatebot')
+        # self.get_logger().info('In rotatebot')
         # create Twist object
         twist = Twist()
         
@@ -163,7 +168,7 @@ class AutoNav(Node):
             current_yaw = self.yaw
             # convert the current yaw to complex form
             c_yaw = complex(math.cos(current_yaw),math.sin(current_yaw))
-            self.get_logger().info('Current Yaw: %f' % math.degrees(current_yaw))
+            # self.get_logger().info('Current Yaw: %f' % math.degrees(current_yaw))
             # get difference in angle between current and target
             c_change = c_target_yaw / c_yaw
             # get the sign to see if we can stop
@@ -176,8 +181,9 @@ class AutoNav(Node):
         # stop the rotation
         self.publisher_.publish(twist)
 
+
     def pick_direction(self):
-        self.get_logger().info('In pick_direction')
+        # self.get_logger().info('In pick_direction')
         if self.laser_range.size != 0:
             # use nanargmax as there are nan's in laser_range added to replace 0's
             lr2i = np.nanargmax(self.laser_range)
@@ -196,8 +202,9 @@ class AutoNav(Node):
         twist.angular.z = 0.0
         # not sure if this is really necessary, but things seem to work more
         # reliably with this
-        # time.sleep(1)
+        time.sleep(1)
         self.publisher_.publish(twist)
+
 
     def stopbot(self):
         self.get_logger().info('In stopbot')
@@ -208,9 +215,8 @@ class AutoNav(Node):
         # time.sleep(1)
         self.publisher_.publish(twist)
 
-    def mover(self):
-        twist = Twist()
 
+    def mover(self):
         try:
             # initialize variable to write elapsed time to file
             # contourCheck = 1
@@ -224,19 +230,16 @@ class AutoNav(Node):
                     # check distances in front of TurtleBot and find values less
                     # than stop_distance
                     lri = (self.laser_range[front_angles]<float(stop_distance)).nonzero()
-                    self.get_logger().info('Distances: %s' % str(lri))
-                else:
-                    lri = np.array([])
+                    # self.get_logger().info('Distances: %s' % str(lri))
 
-                # if the list is not empty
-                if(len(lri)>0):
-                    # stop moving
-                    self.stopbot()
-                    self.get_logger().info('Stop!')
-                    # find direction with the largest distance from the Lidar
-                    # rotate to that direction
-                    # start moving
-                    self.pick_direction()
+                    # if the list is not empty
+                    if(len(lri[0])>0):
+                        # stop moving
+                        self.stopbot()
+                        # find direction with the largest distance from the Lidar
+                        # rotate to that direction
+                        # start moving
+                        self.pick_direction()
                     
                 # allow the callback functions to run
                 rclpy.spin_once(self)
