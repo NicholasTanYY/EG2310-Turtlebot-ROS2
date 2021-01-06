@@ -52,11 +52,11 @@ class Occupy(Node):
         # now change all the values above 1 to 2
         occ3 = (occ2>1).choose(occ2,2)
         # convert into 2D array using column order
-        odata = np.uint8(occ3.reshape(msg.info.width,msg.info.height,order='F'))
+        odata = np.uint8(occ3.reshape(msg.info.height,msg.info.width))
         # create image from 2D array using PIL
         img = Image.fromarray(odata)
         # show the image using grayscale map
-        plt.imshow(img,cmap='gray')
+        plt.imshow(img,cmap='gray', origin='lower')
         plt.draw_all()
         # pause to make sure the plot gets created
         plt.pause(0.00000000001)
