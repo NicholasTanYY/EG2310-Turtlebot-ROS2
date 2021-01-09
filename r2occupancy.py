@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 from PIL import Image
 
 # constants
-occ_bins = [-1, 0, 100, 101]
+occ_bins = [-1, 0, 50, 100]
 
 
 class Occupy(Node):
@@ -38,25 +38,26 @@ class Occupy(Node):
 
     def listener_callback(self, msg):
         # create numpy array
-        occdata = np.array([msg.data])
-        # compute histogram to identify percent of bins with -1
-        occ_counts = np.histogram(occdata,occ_bins)
+        occdata = np.array(msg.data)
+        # compute histogram to identify bins with -1, values between 0 and below 50, 
+        # and values between 50 and 100. The binned_statistic function will also
+        # return the bin numbers so we can use that easily to create the image 
+        occ_counts, edges, binnum = scipy.stats.binned_statistic(occdata, np.nan, statistic='count', bins=occ_bins)
+        # get width and height of map
+        iwidth = msg.info.width
+        iheight = msg.info.height
         # calculate total number of bins
-        total_bins = msg.info.width * msg.info.height
+        total_bins = iwidth * iheight
         # log the info
-        self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0][0], occ_counts[0][1], occ_counts[0][2], total_bins))
-        # make occdata go from 0 to 2 so we can use uint8, which won't be possible if we have
-        # negative values
-        # first make negative values 0
-        occ2 = occdata + 1
-        # now change all the values above 1 to 2
-        occ3 = (occ2>1).choose(occ2,2)
+        # self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0], occ_counts[1], occ_counts[2], total_bins))
+
+        # binnum go from 1 to 3 so we can use uint8
         # convert into 2D array using column order
-        odata = np.uint8(occ3.reshape(msg.info.height,msg.info.width))
+        odata = np.uint8(binnum.reshape(msg.info.height,msg.info.width))
         # create image from 2D array using PIL
         img = Image.fromarray(odata)
         # show the image using grayscale map
-        plt.imshow(img,cmap='gray', origin='lower')
+        plt.imshow(img, cmap='gray', origin='lower')
         plt.draw_all()
         # pause to make sure the plot gets created
         plt.pause(0.00000000001)
