@@ -19,6 +19,7 @@ from nav_msgs.msg import OccupancyGrid
 import numpy as np
 import matplotlib.pyplot as plt
 from PIL import Image
+import scipy.stats
 
 # constants
 occ_bins = [-1, 0, 50, 100]
