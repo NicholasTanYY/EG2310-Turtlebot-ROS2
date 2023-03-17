@@ -154,11 +154,11 @@ class Navigation(Node):
         # stop the rotation
         self.publisher_.publish(self.cmd)
 
-    def MoveForward(self, distance):
+    def MoveForward(self, y_coord):
         
         self.get_logger().info('I receive "%s"' % str(self.odom_y))
         
-        while (self.odom_y < distance):
+        while (self.odom_y < y_coord):
             rclpy.spin_once(self)
             self.get_logger().info('I receive "%s"' % str(self.odom_y))
             self.cmd.linear.x = speed_change
@@ -168,49 +168,62 @@ class Navigation(Node):
         self.cmd.linear.x = 0.0
         self.publisher_.publish(self.cmd)
 
+    def MoveBackwards(self, y_coord):
+        
+        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+        
+        while (self.odom_y > y_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_y))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
 
-    def MoveRight(self, distance):
+    def MoveRight(self, x_coord):
 
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
 
+        
+        while (self.odom_x < x_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
+
+    def MoveLeft(self, x_coord):
+        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+        
+        while (self.odom_x > x_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
+
+    def TurnRight(self):
+        
+        self.get_logger().info('Turning Right Now!')
         self.rotatebot(-90.0)
-        while (self.odom_x < distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
 
-    def MoveLeftUp(self, distance):
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+    def TurnLeft(self):
         
+        self.get_logger().info('Turning Left Now!')
         self.rotatebot(90.0)
-        while (self.odom_y < distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
 
-    def MoveLeft(self, distance):
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+    def Turn180(self):
         
-        self.rotatebot(90.0)
-        while (self.odom_x > distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
+        self.get_logger().info('Turning Back Now!')
+        self.rotatebot(180.0)
 
     def motion_callback(self):
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
@@ -218,37 +231,45 @@ class Navigation(Node):
     def motion(self):
         
         while rclpy.ok():
-            # all these are the coordinates of the table where the turtlebot will be stopping at!
-            #Table1 = True
-            #if (Table1 == True):
-            #    self.MoveForward(1.85)
+            # all these are the x,y odom coordinates of the table where the turtlebot will be stopping at
+            Table1 = False
+            Table2 = False
+            Table3 = False
+            Table4 = False
+            Table5 = False            
+            Table6 = False
+            if (Table1 == True):
+                self.MoveForward(1.85)
             
-            #Table2 = True
-            #elif (Table2 == True):
-            #    self.MoveForward(1.67)
-            #    self.MoveRight(1.35)
-            
-            #Table3 = True
-            #elif (Table3 == True):
-            #    self.MoveForward(1.01)
-            #    self.MoveRight(0.96)
-
-            #Table4 = True
-            #elif (Table4 == True):
-            #    self.MoveForward(0.48)
-            #    self.MoveRight(2.13)
-
-            #Table5 = True
-            #elif (Table5 == True):
-            #    self.MoveForward(0.48)
-            #    self.MoveRight(2.96)
-            #    self.MoveLeftUp(1.86)
-
-            Table6 = True
-            if (Table6 == True):
+            elif (Table2 == True):
                 self.MoveForward(1.67)
+                self.TurnRight()
+                self.MoveRight(1.35)
+            
+            elif (Table3 == True):
+                self.MoveForward(1.01)
+                self.TurnRight()
+                self.MoveRight(0.96)
+
+            elif (Table4 == True):
+                self.MoveForward(0.48)
+                self.TurnRight()
+                self.MoveRight(2.13)
+
+            elif (Table5 == True):
+                self.MoveForward(0.48)
+                self.TurnRight()
+                self.MoveRight(2.96)
+                self.TurnLeft()
+                self.MoveForward(1.86)
+
+            elif (Table6 == True):
+                self.MoveForward(1.67)
+                self.TurnRight()
                 self.MoveRight(2.03)
-                self.MoveLeftUp(3.45)
+                self.TurnLeft()
+                self.MoveForward(3.45)
+                self.TurnLeft()
                 self.MoveLeft(1.08)
             
 
