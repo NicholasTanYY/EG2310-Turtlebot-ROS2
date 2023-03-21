@@ -27,8 +27,14 @@ import cmath
 rotatechange = 0.1
 speedchange = 0.05
 
+arr=[]
 num_waypoints, entries = (4, 3)
-arr = [[0]*entries]*num_waypoints
+for i in range(num_waypoints):
+    col = []
+    for j in range(entries):
+        col.append(0)
+    arr.append(col)
+
 f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
 
 class Mover(Node):
@@ -86,6 +92,7 @@ class Mover(Node):
             while waypoint < num_waypoints:
                 # get keyboard input
                 print("Press p to set waypoint")
+                rclpy.spin_once(self)
                 cmd_char = str(input("Keys w/x a/d s: "))
         
                 # check which key was entered
@@ -118,7 +125,7 @@ class Mover(Node):
                     arr[waypoint][2] = self.yaw                 
 
                     self.get_logger().info('Waypoint logged!')
-                    print(self.message_print)
+                    print(arr)
                     waypoint += 1
 
                 # start the movement
@@ -147,7 +154,7 @@ def main(args=None):
 
     mover = Mover()
     mover.readKey()
-    
+
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
