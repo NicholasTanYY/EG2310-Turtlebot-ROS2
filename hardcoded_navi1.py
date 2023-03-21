@@ -238,6 +238,8 @@ class Navigation(Node):
     def motion(self):
         
         try:
+            waypoint_arr = np.genfromtxt('/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt', delimiter=' ')
+            # print(waypoint_arr)
             while rclpy.ok():
                 
                 table_num = 0

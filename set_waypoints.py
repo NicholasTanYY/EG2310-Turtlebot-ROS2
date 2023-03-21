@@ -144,8 +144,7 @@ class Mover(Node):
 
             # write to waypoint file
             waypoint_arr = np.array(arr)
-            with open(f_path, 'w+') as waypoint_log:
-                waypoint_log.write(str(waypoint_arr))
+            np.savetxt(f_path, waypoint_arr)
 
 
 
