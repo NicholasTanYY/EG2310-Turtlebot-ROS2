@@ -10,10 +10,11 @@ import cmath
 import time
 
 rotate_change = 0.1
-speed_change=0.05
+speed_change= 0.05
 front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
+waypoint = 0
 
 class Navigation(Node):
     
@@ -215,42 +216,66 @@ class Navigation(Node):
     def motion_callback(self):
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
 
+    def travel_to_waypoint(self, waypoint_num):
+        if waypoint_num == 8:
+            
+            self.MoveForward(1.85)
+
+
     def motion(self):
         
-        while rclpy.ok():
-            # all these are the coordinates of the table where the turtlebot will be stopping at!
-            #Table1 = True
-            #if (Table1 == True):
-            #    self.MoveForward(1.85)
-            
-            #Table2 = True
-            #elif (Table2 == True):
-            #    self.MoveForward(1.67)
-            #    self.MoveRight(1.35)
-            
-            #Table3 = True
-            #elif (Table3 == True):
-            #    self.MoveForward(1.01)
-            #    self.MoveRight(0.96)
+        try:
+            while rclpy.ok():
+                
+                table_num = 0
+                while table_num < 1 or table_num > 6:
+                    table_num = int(input("Enter a table number to deliver to: "))
+                    
+                # all these are the coordinates of the table where the turtlebot will be stopping at!
+                if (table_num == 1):
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.travel_to_waypoint(8)
 
-            #Table4 = True
-            #elif (Table4 == True):
-            #    self.MoveForward(0.48)
-            #    self.MoveRight(2.13)
+                    # self.MoveForward(1.85)
+                
+                elif (table_num == 2):
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.MoveForward(1.67)
+                    self.MoveRight(1.35)
+                
+                elif (table_num == 3):
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.MoveForward(1.01)
+                    self.MoveRight(0.96)
 
-            #Table5 = True
-            #elif (Table5 == True):
-            #    self.MoveForward(0.48)
-            #    self.MoveRight(2.96)
-            #    self.MoveLeftUp(1.86)
+                elif (table_num == 4):
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.MoveForward(0.48)
+                    self.MoveRight(2.13)
 
-            Table6 = True
-            if (Table6 == True):
-                self.MoveForward(1.67)
-                self.MoveRight(2.03)
-                self.MoveLeftUp(3.45)
-                self.MoveLeft(1.08)
-            
+                elif (table_num == 5):
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.MoveForward(0.48)
+                    self.MoveRight(2.96)
+                    self.MoveLeftUp(1.86)
+
+                else: # table_num == 6
+                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    self.MoveForward(1.67)
+                    self.MoveRight(2.03)
+                    self.MoveLeftUp(3.45)
+                    self.MoveLeft(1.08)
+        
+        except Exception as e:
+            print(e)
+
+        # Ctrl-c detected
+        finally:
+        	# stop moving
+            self.cmd.linear.x = 0.0
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+
 
 def main(args=None):
 

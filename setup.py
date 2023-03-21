@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'run_course = auto_nav.main:main',
+            'set_waypoints = auto_nav.set_waypoints:main',
             'hardcoded_navi_node = auto_nav.hardcoded_navi1:main'
         ],
     },

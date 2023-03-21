@@ -10,7 +10,7 @@ import cmath
 import time
 
 rotate_change = 0.1
-speed_change=0.05
+speed_change= 0.05
 front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
@@ -38,9 +38,9 @@ class Navigation(Node):
                 self.laser_callback, 
                 QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
         
-        self.timer_period = 0.5
+        #self.timer_period = 0.5
         
-        self.timer = self.create_timer(self.timer_period, self.motion)
+        #self.timer = self.create_timer(self.timer_period, self.motion)
 
         self.cmd = Twist()
 
@@ -49,6 +49,8 @@ class Navigation(Node):
         self.yaw = 0.0
         self.laser_range = np.array([])
         self.laser_forward = 0.0
+        self.odom_x = 0.0
+        self.odom_y = 0.0
 
     def euler_from_quaternion(self, quaternion): 
         """ 
@@ -125,11 +127,12 @@ class Navigation(Node):
         # set the direction to rotate
         self.cmd.angular.z = c_change_dir * rotate_change
         # start rotation
+        self.get_logger().info('I receive "%s"' % str(self.cmd.angular.z))
         self.publisher_.publish(self.cmd)
 
         # we will use the c_dir_diff variable to see if we can stop rotating
         c_dir_diff = c_change_dir
-        # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
+        self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
         # if the rotation direction was 1.0, then we will want to stop when the c_dir_diff
         # becomes -1.0, and vice versa
         while(c_change_dir * c_dir_diff > 0):
@@ -170,8 +173,24 @@ class Navigation(Node):
 
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
 
-        self.rotatebot(270.0)
+        self.rotatebot(-90.0)
         while (self.odom_x < distance):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
+
+    def MoveLeftUp(self, distance):
+        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+        
+        self.rotatebot(90.0)
+        while (self.odom_y < distance):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_y))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -183,7 +202,9 @@ class Navigation(Node):
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
         
         self.rotatebot(90.0)
-        while (self.odom_x < distance):
+        while (self.odom_x > distance):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -194,35 +215,53 @@ class Navigation(Node):
     def motion_callback(self):
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
 
-    def motion(self):
+    def motion(self, table_num):
         
-        distance = 1.22
-        if (FirstMoveDone == False):
-            if (self.odom_y < distance):
-                self.get_logger().info('I receive "%s"' % str(self.odom_y))
-                self.cmd.linear.x = speed_change
-                self.cmd.angular.z = 0.0
-                self.publisher_.publish(self.cmd)
+        while rclpy.ok():
+            # all these are the coordinates of the table where the turtlebot will be stopping at!
+            if (table_num == 1):
+               self.get_logger().info('Moving to table "%s"!' % str(table_num))
+               self.MoveForward(1.85)
+            
+            elif (table_num == 2):
+               self.get_logger().info('Moving to table "%s"!' % str(table_num))
+               self.MoveForward(1.67)
+               self.MoveRight(1.35)
+            
+            elif (table_num == 3):
+               self.get_logger().info('Moving to table "%s"!' % str(table_num))
+               self.MoveForward(1.01)
+               self.MoveRight(0.96)
+
+            elif (table_num == 4):
+               self.get_logger().info('Moving to table "%s"!' % str(table_num))
+               self.MoveForward(0.48)
+               self.MoveRight(2.13)
+
+            elif (table_num == 5):
+               self.get_logger().info('Moving to table "%s"!' % str(table_num))
+               self.MoveForward(0.48)
+               self.MoveRight(2.96)
+               self.MoveLeftUp(1.86)
+
+            elif (table_num == 6):
+                self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                self.MoveForward(1.67)
+                self.MoveRight(2.03)
+                self.MoveLeftUp(3.45)
+                self.MoveLeft(1.08)
+            
             else:
-                self.cmd.linear.x = 0.0
-                self.publisher_.publish(self.cmd)
-                FirstMoveDone = True
-                SecondMoveDone = False
+                self.get_logger().info('Please input a table number from 1 to 6.')
 
-        if (SecondMoveDone == False):
-            self.rotatebot(270.0)
-                        
-
-        # if 
-        # self.MoveForward(1.22)
-        # self.MoveRight(0.6)
 
 def main(args=None):
 
     rclpy.init(args=args)
     hardcoded_navi_node = Navigation()
-    rclpy.spin(hardcoded_navi_node)
-    hardcoded_navi_node.motion()
+
+    table_num = int(input("Enter a table number to deliver to: "))
+    hardcoded_navi_node.motion(table_num)
     hardcoded_navi_node.destroy_node()
     rclpy.shutdown()
 
