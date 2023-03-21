@@ -155,11 +155,11 @@ class Navigation(Node):
         # stop the rotation
         self.publisher_.publish(self.cmd)
 
-    def MoveForward(self, distance):
+    def MoveForward(self, y_coord):
         
         self.get_logger().info('I receive "%s"' % str(self.odom_y))
         
-        while (self.odom_y < distance):
+        while (self.odom_y < y_coord):
             rclpy.spin_once(self)
             self.get_logger().info('I receive "%s"' % str(self.odom_y))
             self.cmd.linear.x = speed_change
@@ -169,49 +169,62 @@ class Navigation(Node):
         self.cmd.linear.x = 0.0
         self.publisher_.publish(self.cmd)
 
+    def MoveBackwards(self, y_coord):
+        
+        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+        
+        while (self.odom_y > y_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_y))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
 
-    def MoveRight(self, distance):
+    def MoveRight(self, x_coord):
 
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
 
+        
+        while (self.odom_x < x_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
+
+    def MoveLeft(self, x_coord):
+        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+        
+        while (self.odom_x > x_coord):
+            rclpy.spin_once(self)
+            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.cmd.linear.x = speed_change
+            self.cmd.angular.z = 0.0
+            self.publisher_.publish(self.cmd)
+         
+        self.cmd.linear.x = 0.0
+        self.publisher_.publish(self.cmd)
+
+    def TurnRight(self):
+        
+        self.get_logger().info('Turning Right Now!')
         self.rotatebot(-90.0)
-        while (self.odom_x < distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
 
-    def MoveLeftUp(self, distance):
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+    def TurnLeft(self):
         
+        self.get_logger().info('Turning Left Now!')
         self.rotatebot(90.0)
-        while (self.odom_y < distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
 
-    def MoveLeft(self, distance):
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+    def Turn180(self):
         
-        self.rotatebot(90.0)
-        while (self.odom_x > distance):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
+        self.get_logger().info('Turning Back Now!')
+        self.rotatebot(180.0)
 
     def motion_callback(self):
         self.get_logger().info('I receive "%s"' % str(self.odom_x))
