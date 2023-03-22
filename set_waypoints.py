@@ -26,8 +26,8 @@ rotatechange = 0.1
 speedchange = 0.05
 
 arr=[]
-num_waypoints, entries = (4, 3)
-for i in range(num_waypoints):
+num_waypoints, entries = (7, 3)
+for i in range(num_waypoints+1):
     col = []
     for j in range(entries):
         col.append(0)
@@ -38,7 +38,6 @@ f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
 class Mover(Node):
     def __init__(self):
         super().__init__('mover')
-        self.publisher_ = self.create_publisher(geometry_msgs.msg.Twist,'cmd_vel',10)
 
         self.map_frame_subscriber = self.create_subscription(
                 Pose, 
@@ -85,45 +84,44 @@ class Mover(Node):
     
 # function to read keyboard input
     def readKey(self):
-        twist = geometry_msgs.msg.Twist()
         try:
+            print("Run map2base publisher along with this.")
+            print("Run teleop_keyboard along with this using the command rteleop.")
+            print("\nPress p once before setting waypoints\n")
+
             waypoint = 0
-            while waypoint < num_waypoints:
+            while waypoint < num_waypoints+1:
                 # get keyboard input
-                print("Run map2base publisher along with this.")
-                print("Run teleop_keyboard along with this using the command rteleop.")
+                
                 rclpy.spin_once(self)
                 cmd_char = str(input("Press p to set waypoint: "))
-        
+                    
                 # check which key was entered
                 if cmd_char == 'p':
                     # set the current point as a waypoint. Get the x and y coordinates as well as the value for yaw
                     # store in the format [x, y, yaw]
-                    
+
                     arr[waypoint][0] = self.pos_x
                     arr[waypoint][1] = self.pos_y
-                    arr[waypoint][2] = self.yaw                 
+                    arr[waypoint][2] = self.yaw            
 
-                    self.get_logger().info('Waypoint logged!')
-                    print(arr)
+                    self.get_logger().info(f'Waypoint {waypoint} logged!')
+                    print(arr[1:])
+
+                    if waypoint == 0:
+                        print("Ignore values above. Start plotting waypoints now.")
                     waypoint += 1
-
-                # start the movement
-                self.publisher_.publish(twist)
                 
                 
         except Exception as e:
             print(e)
             
+
 		# Ctrl-c detected
         finally:
-            # stop the robot
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
-            self.publisher_.publish(twist)
-
             # write to waypoint file
-            waypoint_arr = np.array(arr)
+            new_arr = arr[1:]        # debugging error for identical first 2 entries
+            waypoint_arr = np.array(new_arr)
             np.savetxt(f_path, waypoint_arr)
 
 
