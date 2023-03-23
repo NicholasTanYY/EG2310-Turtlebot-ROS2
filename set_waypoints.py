@@ -17,19 +17,17 @@
 import rclpy
 from rclpy.node import Node
 import geometry_msgs.msg
-from nav_msgs.msg import Odometry
+from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
-import math
 import numpy as np
-import cmath
 
 # constants
 rotatechange = 0.1
 speedchange = 0.05
 
 arr=[]
-num_waypoints, entries = (4, 3)
-for i in range(num_waypoints):
+num_waypoints, entries = (7, 3)
+for i in range(num_waypoints+1):
     col = []
     for j in range(entries):
         col.append(0)
@@ -40,25 +38,25 @@ f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
 class Mover(Node):
     def __init__(self):
         super().__init__('mover')
-        self.publisher_ = self.create_publisher(geometry_msgs.msg.Twist,'cmd_vel',10)
 
-        self.odom_subscriber = self.create_subscription(
-                Odometry, 
-                'odom', 
-                self.odom_callback, 
+        self.map_frame_subscriber = self.create_subscription(
+                Pose, 
+                'map2base',
+                self.map_callback, 
                 QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
-        self.odom_subscriber
-        self.odom_x = 0.0
-        self.odom_y = 0.0
+        self.map_frame_subscriber
+
+        self.pos_x = 0.0
+        self.pos_y = 0.0
         self.yaw = 0.0
         
-    def odom_callback(self, msg):
+    def map_callback(self, msg):
         
-        orientation_quat = msg.pose.pose.orientation
+        orientation_quat = msg.orientation
         quaternion = [orientation_quat.x, orientation_quat.y, orientation_quat.z, orientation_quat.w]
         (self.roll, self.pitch, self.yaw) = self.euler_from_quaternion(quaternion)
-        self.odom_x = msg.pose.pose.position.x
-        self.odom_y = msg.pose.pose.position.y
+        self.pos_x = msg.position.x
+        self.pos_y = msg.position.y
 
     def euler_from_quaternion(self, quaternion): 
         """ 
@@ -86,66 +84,45 @@ class Mover(Node):
     
 # function to read keyboard input
     def readKey(self):
-        twist = geometry_msgs.msg.Twist()
         try:
+            print("Run map2base publisher along with this.")
+            print("Run teleop_keyboard along with this using the command rteleop.")
+            print("\nPress p once before setting waypoints\n")
+
             waypoint = 0
-            while waypoint < num_waypoints:
+            while waypoint < num_waypoints+1:
                 # get keyboard input
-                print("Press p to set waypoint")
+                
                 rclpy.spin_once(self)
-                cmd_char = str(input("Keys w/x a/d s: "))
-        
+                cmd_char = str(input("Press p to set waypoint: "))
+                    
                 # check which key was entered
-                if cmd_char == 's':
-                    # stop moving
-                    twist.linear.x = 0.0
-                    twist.angular.z = 0.0
-                elif cmd_char == 'w':
-                    # move forward
-                    twist.linear.x += speedchange
-                    twist.angular.z = 0.0
-                elif cmd_char == 'x':
-                    # move backward
-                    twist.linear.x -= speedchange
-                    twist.angular.z = 0.0
-                elif cmd_char == 'a':
-                    # turn counter-clockwise
-                    twist.linear.x = 0.0
-                    twist.angular.z += rotatechange
-                elif cmd_char == 'd':
-                    # turn clockwise
-                    twist.linear.x = 0.0
-                    twist.angular.z -= rotatechange
-                elif cmd_char == 'p':
+                if cmd_char == 'p':
                     # set the current point as a waypoint. Get the x and y coordinates as well as the value for yaw
                     # store in the format [x, y, yaw]
-                    
-                    arr[waypoint][0] = self.odom_x
-                    arr[waypoint][1] = self.odom_y
-                    arr[waypoint][2] = self.yaw                 
 
-                    self.get_logger().info('Waypoint logged!')
-                    print(arr)
+                    arr[waypoint][0] = self.pos_x
+                    arr[waypoint][1] = self.pos_y
+                    arr[waypoint][2] = self.yaw            
+
+                    self.get_logger().info(f'Waypoint {waypoint} logged!')
+                    print(arr[1:])
+
+                    if waypoint == 0:
+                        print("Ignore values above. Start plotting waypoints now.")
                     waypoint += 1
-
-                # start the movement
-                self.publisher_.publish(twist)
                 
                 
         except Exception as e:
             print(e)
             
+
 		# Ctrl-c detected
         finally:
-            # stop the robot
-            twist.linear.x = 0.0
-            twist.angular.z = 0.0
-            self.publisher_.publish(twist)
-
             # write to waypoint file
-            waypoint_arr = np.array(arr)
+            new_arr = arr[1:]        # debugging error for identical first 2 entries
+            waypoint_arr = np.array(new_arr)
             np.savetxt(f_path, waypoint_arr)
-
 
 
 def main(args=None):
@@ -153,7 +130,6 @@ def main(args=None):
 
     mover = Mover()
     mover.readKey()
-
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
