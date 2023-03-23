@@ -1,6 +1,7 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import ReliabilityPolicy, QoSProfile
@@ -33,6 +34,12 @@ class Navigation(Node):
                 self.odom_callback, 
                 QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
         
+        self.map2base_subscriber = self.create_subscription(
+            Pose,
+            'map2base',
+            self.map2base_callback,
+            1)
+        
         self.scan_subscriber = self.create_subscription(
                 LaserScan, 
                 'scan', 
@@ -52,6 +59,7 @@ class Navigation(Node):
         self.laser_forward = 0.0
         self.odom_x = 0.0
         self.odom_y = 0.0
+        self.mapbase = Pose().position
 
     def euler_from_quaternion(self, quaternion): 
         """ 
@@ -76,6 +84,12 @@ class Navigation(Node):
         yaw = np.arctan2(siny_cosp, cosy_cosp) 
  
         return roll, pitch, yaw
+    
+    def map2base_callback(self, msg):
+        # self.get_logger().info('In map2basecallback')
+        
+        self.mapbase = msg.position
+        self.get_logger().info("'%s'" % str(self.mapbase.y))
     
     def odom_callback(self, msg):
         
@@ -157,11 +171,11 @@ class Navigation(Node):
 
     def MoveForward(self, y_coord):
         
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+        self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
         
-        while (self.odom_y < y_coord):
+        while (self.mapbase.y < y_coord):
             rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
+            self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -171,11 +185,11 @@ class Navigation(Node):
 
     def MoveBackwards(self, y_coord):
         
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
+        self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
         
-        while (self.odom_y > y_coord):
+        while (self.mapbase.y > y_coord):
             rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
+            self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -185,12 +199,12 @@ class Navigation(Node):
 
     def MoveRight(self, x_coord):
 
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+        self.get_logger().info('I receive "%s"' % str(self.mapbase.x))
 
         
-        while (self.odom_x < x_coord):
+        while (self.mapbase.x < x_coord):
             rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.get_logger().info('I receive "%s"' % str(self.mapbase.x))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -199,11 +213,11 @@ class Navigation(Node):
         self.publisher_.publish(self.cmd)
 
     def MoveLeft(self, x_coord):
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+        self.get_logger().info('I receive "%s"' % str(self.mapbase.x))
         
-        while (self.odom_x > x_coord):
+        while (self.mapbase.x > x_coord):
             rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
+            self.get_logger().info('I receive "%s"' % str(self.mapbase.x))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
@@ -246,7 +260,7 @@ class Navigation(Node):
                     
                 # all these are the coordinates of the table where the turtlebot will be stopping at!
                 if (table_num == 1):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
+                    #self.get_logger().info('Moving to table "%s"!' % str(table_num))
                     self.travel_to_waypoint(8)
 
                     # self.MoveForward(1.85)
