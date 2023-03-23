@@ -21,12 +21,10 @@ from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import numpy as np
 
-# constants
-rotatechange = 0.1
-speedchange = 0.05
+num_waypoints = 15
 
+entries = 3
 arr=[]
-num_waypoints, entries = (7, 3)
 for i in range(num_waypoints+1):
     col = []
     for j in range(entries):
@@ -34,6 +32,30 @@ for i in range(num_waypoints+1):
     arr.append(col)
 
 f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
+
+def euler_from_quaternion(quaternion): 
+    """ 
+    Converts quaternion (w in last place) to euler roll, pitch, yaw 
+    quaternion = [x, y, z, w] 
+    Below should be replaced when porting for ROS2 Python tf_conversions is done. 
+    """ 
+    x = quaternion[0] 
+    y = quaternion[1] 
+    z = quaternion[2] 
+    w = quaternion[3] 
+
+    sinr_cosp = 2 * (w * x + y * z) 
+    cosr_cosp = 1 - 2 * (x * x + y * y) 
+    roll = np.arctan2(sinr_cosp, cosr_cosp) 
+
+    sinp = 2 * (w * y - z * x) 
+    pitch = np.arcsin(sinp) 
+
+    siny_cosp = 2 * (w * z + x * y) 
+    cosy_cosp = 1 - 2 * (y * y + z * z) 
+    yaw = np.arctan2(siny_cosp, cosy_cosp) 
+
+    return roll, pitch, yaw
 
 class Mover(Node):
     def __init__(self):
@@ -54,33 +76,9 @@ class Mover(Node):
         
         orientation_quat = msg.orientation
         quaternion = [orientation_quat.x, orientation_quat.y, orientation_quat.z, orientation_quat.w]
-        (self.roll, self.pitch, self.yaw) = self.euler_from_quaternion(quaternion)
+        (self.roll, self.pitch, self.yaw) = euler_from_quaternion(quaternion)
         self.pos_x = msg.position.x
         self.pos_y = msg.position.y
-
-    def euler_from_quaternion(self, quaternion): 
-        """ 
-        Converts quaternion (w in last place) to euler roll, pitch, yaw 
-        quaternion = [x, y, z, w] 
-        Below should be replaced when porting for ROS2 Python tf_conversions is done. 
-        """ 
-        x = quaternion[0] 
-        y = quaternion[1] 
-        z = quaternion[2] 
-        w = quaternion[3] 
- 
-        sinr_cosp = 2 * (w * x + y * z) 
-        cosr_cosp = 1 - 2 * (x * x + y * y) 
-        roll = np.arctan2(sinr_cosp, cosr_cosp) 
- 
-        sinp = 2 * (w * y - z * x) 
-        pitch = np.arcsin(sinp) 
- 
-        siny_cosp = 2 * (w * z + x * y) 
-        cosy_cosp = 1 - 2 * (y * y + z * z) 
-        yaw = np.arctan2(siny_cosp, cosy_cosp) 
- 
-        return roll, pitch, yaw
     
 # function to read keyboard input
     def readKey(self):
