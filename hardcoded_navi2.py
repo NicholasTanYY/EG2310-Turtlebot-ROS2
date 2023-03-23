@@ -22,6 +22,30 @@ stop_distance = 0.25
 waypoint = 0
 occ_bins = [-1, 0, 50, 101]
 
+def euler_from_quaternion(quaternion): 
+    """ 
+    Converts quaternion (w in last place) to euler roll, pitch, yaw 
+    quaternion = [x, y, z, w] 
+    Below should be replaced when porting for ROS2 Python tf_conversions is done. 
+    """ 
+    x = quaternion[0] 
+    y = quaternion[1] 
+    z = quaternion[2] 
+    w = quaternion[3] 
+
+    sinr_cosp = 2 * (w * x + y * z) 
+    cosr_cosp = 1 - 2 * (x * x + y * y) 
+    roll = np.arctan2(sinr_cosp, cosr_cosp) 
+
+    sinp = 2 * (w * y - z * x) 
+    pitch = np.arcsin(sinp) 
+
+    siny_cosp = 2 * (w * z + x * y) 
+    cosy_cosp = 1 - 2 * (y * y + z * z) 
+    yaw = np.arctan2(siny_cosp, cosy_cosp) 
+
+    return roll, pitch, yaw
+
 class Navigation(Node):
     
     def __init__(self):
@@ -82,30 +106,6 @@ class Navigation(Node):
         self.resolution = 0.05
         self.Xadjust = 0
         self.Yadjust = 0
-
-    def euler_from_quaternion(self, quaternion): 
-        """ 
-        Converts quaternion (w in last place) to euler roll, pitch, yaw 
-        quaternion = [x, y, z, w] 
-        Below should be replaced when porting for ROS2 Python tf_conversions is done. 
-        """ 
-        x = quaternion[0] 
-        y = quaternion[1] 
-        z = quaternion[2] 
-        w = quaternion[3] 
- 
-        sinr_cosp = 2 * (w * x + y * z) 
-        cosr_cosp = 1 - 2 * (x * x + y * y) 
-        roll = np.arctan2(sinr_cosp, cosr_cosp) 
- 
-        sinp = 2 * (w * y - z * x) 
-        pitch = np.arcsin(sinp) 
- 
-        siny_cosp = 2 * (w * z + x * y) 
-        cosy_cosp = 1 - 2 * (y * y + z * z) 
-        yaw = np.arctan2(siny_cosp, cosy_cosp) 
- 
-        return roll, pitch, yaw
     
     def map2base_callback(self, msg):
         # self.get_logger().info('In map2basecallback')
@@ -117,7 +117,7 @@ class Navigation(Node):
         
         orientation_quat = msg.pose.pose.orientation
         quaternion = [orientation_quat.x, orientation_quat.y, orientation_quat.z, orientation_quat.w]
-        (self.roll, self.pitch, self.yaw) = self.euler_from_quaternion(quaternion)
+        (self.roll, self.pitch, self.yaw) = euler_from_quaternion(quaternion)
         self.odom_x = msg.pose.pose.position.x
         self.odom_y = msg.pose.pose.position.y
 
