@@ -5,10 +5,14 @@ from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import ReliabilityPolicy, QoSProfile
+from nav_msgs.msg import OccupancyGrid
 import math
 import numpy as np
 import cmath
 import time
+from PIL import Image
+import scipy.stats
+import matplotlib.pyplot as plt
 
 rotate_change = 0.1
 speed_change= 0.05
@@ -16,6 +20,7 @@ front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 waypoint = 0
+occ_bins = [-1, 0, 50, 101]
 
 class Navigation(Node):
     
@@ -46,6 +51,12 @@ class Navigation(Node):
                 self.laser_callback, 
                 QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
         
+        self.occ_subscription = self.create_subscription(
+            OccupancyGrid,
+            'map',
+            self.occ_callback,
+            1)
+        
         #self.timer_period = 0.5
         
         #self.timer = self.create_timer(self.timer_period, self.motion)
@@ -60,6 +71,17 @@ class Navigation(Node):
         self.odom_x = 0.0
         self.odom_y = 0.0
         self.mapbase = Pose().position
+        self.Xpos = 0
+        self.Ypos = 0
+        self.XposNoAdjust = 0
+        self.YposNoAdjust = 0
+        self.mazelayout = []
+        # self.visitedarraynoadjust = []
+        self.visitedarray = np.zeros((300,300),int)
+        self.previousaction = []
+        self.resolution = 0.05
+        self.Xadjust = 0
+        self.Yadjust = 0
 
     def euler_from_quaternion(self, quaternion): 
         """ 
@@ -104,6 +126,40 @@ class Navigation(Node):
         self.laser_range = np.array(msg.ranges)
 
         self.laser_range[self.laser_range==0] = np.nan
+
+    def occ_callback(self, msg):
+        # self.get_logger().info('In occ_callback')
+        occdata = np.array(msg.data)
+        # compute histogram to identify bins with -1, values between 0 and below 50, 
+        # and values between 50 and 50. The binned_statistic function will also
+        # return the bin numbers so we can use that easily to create the image 
+        occ_counts, edges, binnum = scipy.stats.binned_statistic(occdata, np.nan, statistic='count', bins=occ_bins)
+        # get width and height of map
+        iwidth = msg.info.width
+        iheight = msg.info.height
+        # calculate total number of bins
+        total_bins = iwidth * iheight
+        # log the info
+        # self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0], occ_counts[1], occ_counts[2], total_bins))
+
+        # binnum go from 1 to 3 so we can use uint8
+        # convert into 2D array using column order
+        self.mazelayout = np.uint8(binnum.reshape(msg.info.height,msg.info.width))
+
+        self.Xpos = int(np.rint((self.mapbase.x - msg.info.origin.position.x)/self.resolution))
+        self.Ypos = int(np.rint((self.mapbase.y - msg.info.origin.position.y)/self.resolution))
+        self.mazelayout[self.Ypos][self.Xpos] = 6
+        # self.mazelayout[self.Ypos][self.Xpos - 5] = 10
+        self.XposNoAdjust = int(np.rint((self.mapbase.x + 5)/self.resolution))
+        self.YposNoAdjust = int(np.rint((self.mapbase.y + 5)/self.resolution))
+        self.Xadjust = msg.info.origin.position.x
+        self.Yadjust = msg.info.origin.position.y
+        img2 = Image.fromarray(self.mazelayout)
+        img = Image.fromarray(np.uint8(self.visitedarray.reshape(300,300)))
+        plt.imshow(img2, cmap='gray', origin='lower')
+        plt.draw_all()
+        # # pause to make sure the plot gets created
+        plt.pause(0.00000000001)
 
 
     def stopbot(self):
