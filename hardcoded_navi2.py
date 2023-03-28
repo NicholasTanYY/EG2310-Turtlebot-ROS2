@@ -21,7 +21,7 @@ front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
 box_thres = 0.1
-f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
+f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
 
 def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
     """
