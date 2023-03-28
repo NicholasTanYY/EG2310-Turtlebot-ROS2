@@ -4,6 +4,7 @@ from geometry_msgs.msg import Twist
 from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
+from custom_msgs.msg import Button
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 from nav_msgs.msg import OccupancyGrid
 import math
@@ -103,6 +104,13 @@ class Navigation(Node):
             'map',
             self.occ_callback,
             1)
+        
+        self.button_subscription = self.create_subscription(
+            Button,
+            'button_pressed',
+            self.button_callback,
+            10)
+        self.buttonpressed = False
 
         self.cmd = Twist()
 
@@ -173,6 +181,11 @@ class Navigation(Node):
         plt.draw_all()
         # # pause to make sure the plot gets created
         plt.pause(0.00000000001)
+
+    def button_callback(self, msg):
+        # self.get_logger().info('In button_callback')
+        self.buttonpressed = msg.button_pressed
+        self.get_logger().info('Button pressed: "%s"' % msg.button_pressed)
 
 
     def stopbot(self, delay):
