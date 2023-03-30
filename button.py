@@ -4,7 +4,7 @@ import RPi.GPIO as GPIO
 import time
 from custom_msgs.msg import Button
 
-button_pin = 
+button_pin = 15
 
 GPIO.setmode(GPIO.BCM)
 GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
