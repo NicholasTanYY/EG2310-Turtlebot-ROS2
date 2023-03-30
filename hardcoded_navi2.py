@@ -6,6 +6,7 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import String
 import math
 import numpy as np
 import cmath
@@ -104,6 +105,12 @@ class Navigation(Node):
             self.occ_callback,
             1)
 
+        self.mqtt_subscription = self.create_subscription(
+            String,
+            'mqtt_data',
+            self.mqtt_callback,
+            1)
+
         self.cmd = Twist()
 
         self.roll = 0.0
@@ -117,13 +124,13 @@ class Navigation(Node):
         self.XposNoAdjust = 0
         self.YposNoAdjust = 0
         self.mazelayout = []
-        # self.visitedarraynoadjust = []
         self.visitedarray = np.zeros((300,300),int)
         self.previousaction = []
         self.resolution = 0.05
         self.Xadjust = 0
         self.Yadjust = 0
         self.waypoint_arr = np.genfromtxt(f_path)
+        self.mqtt_val = 0
     
     def map2base_callback(self, msg):
         
@@ -174,7 +181,13 @@ class Navigation(Node):
         # # pause to make sure the plot gets created
         plt.pause(0.00000000001)
 
-
+    def mqtt_callback(self, msg):
+        # print("before decode", msg.data)
+        # data = msg.data.decode('UTF-8') # str has no attribute decode
+        data = msg.data
+        print("Received MQTT data:", data)
+        self.mqtt_val = int(data)
+        
     def stopbot(self, delay):
         self.cmd.linear.x = 0.0
         self.cmd.angular.z = 0.0
@@ -271,9 +284,12 @@ class Navigation(Node):
                 print("current Xpos = ", self.Xpos)
                 print("current Ypos = ", self.Ypos)
 
-                table_num = 0
-                while table_num < 1 or table_num > 6:
-                    table_num = int(input("Enter a table number to deliver to: "))
+                print("Waiting for mqtt input...")
+                while self.mqtt_val == 0:
+                    rclpy.spin_once(self)
+                
+                table_num = self.mqtt_val
+                print("table_num received = ", table_num)
 
                 if (table_num == 1):
                     # moving to the table
