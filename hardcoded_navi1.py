@@ -1,20 +1,80 @@
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
+from geometry_msgs.msg import Pose
 from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import ReliabilityPolicy, QoSProfile
+from nav_msgs.msg import OccupancyGrid
+from std_msgs.msg import String
 import math
 import numpy as np
 import cmath
 import time
+from PIL import Image
+import scipy.stats
+import matplotlib.pyplot as plt
 
-rotate_change = 0.1
-speed_change= 0.05
+rotate_change = 0.15
+speed_change= 0.15
 front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
-waypoint = 0
+occ_bins = [-1, 0, 50, 101]
+box_thres = 0.1
+f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
+
+def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
+    """
+    Calculates the yaw the robot needs to turn to and the distance it needs to travel to move from point (x1, y1)
+    to point (x2, y2) on a 2D plane, given its current yaw coordinate.
+    Returns a tuple containing the new yaw and the distance as float values.
+    """
+    # Calculate the angle between the two points using the arctan2 function
+    delta_x = x2 - x1
+    delta_y = y2 - y1
+    target_yaw = math.atan2(delta_y, delta_x)
+
+    # Calculate the distance between the two points using the Pythagorean theorem
+    distance = math.sqrt(delta_x ** 2 + delta_y ** 2)
+
+    # Calculate the difference between the current yaw and the target yaw
+
+    print("target_yaw = ", target_yaw)
+    print("current_yaw = ", current_yaw)
+    yaw_difference = target_yaw - current_yaw
+
+    # Normalize the yaw difference to between -pi and pi radians
+    if yaw_difference > math.pi:
+        yaw_difference -= 2 * math.pi
+    elif yaw_difference < -math.pi:
+        yaw_difference += 2 * math.pi
+
+    return (round(yaw_difference, 3), round(distance, 3))
+
+def euler_from_quaternion(quaternion): 
+    """ 
+    Converts quaternion (w in last place) to euler roll, pitch, yaw 
+    quaternion = [x, y, z, w] 
+    Below should be replaced when porting for ROS2 Python tf_conversions is done. 
+    """ 
+    x = quaternion[0] 
+    y = quaternion[1] 
+    z = quaternion[2] 
+    w = quaternion[3] 
+
+    sinr_cosp = 2 * (w * x + y * z) 
+    cosr_cosp = 1 - 2 * (x * x + y * y) 
+    roll = np.arctan2(sinr_cosp, cosr_cosp) 
+
+    sinp = 2 * (w * y - z * x) 
+    pitch = np.arcsin(sinp) 
+
+    siny_cosp = 2 * (w * z + x * y) 
+    cosy_cosp = 1 - 2 * (y * y + z * z) 
+    yaw = np.arctan2(siny_cosp, cosy_cosp) 
+
+    return roll, pitch, yaw
 
 class Navigation(Node):
     
@@ -27,11 +87,11 @@ class Navigation(Node):
                 'cmd_vel', 
                 10)
         
-        self.odom_subscriber = self.create_subscription(
-                Odometry, 
-                'odom', 
-                self.odom_callback, 
-                QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
+        self.map2base_subscriber = self.create_subscription(
+            Pose,
+            'map2base',
+            self.map2base_callback,
+            1)
         
         self.scan_subscriber = self.create_subscription(
                 LaserScan, 
@@ -39,9 +99,17 @@ class Navigation(Node):
                 self.laser_callback, 
                 QoSProfile(depth=10, reliability=ReliabilityPolicy.RELIABLE))
         
-        #self.timer_period = 0.5
-        
-        #self.timer = self.create_timer(self.timer_period, self.motion)
+        self.occ_subscription = self.create_subscription(
+            OccupancyGrid,
+            'map',
+            self.occ_callback,
+            1)
+
+        self.mqtt_subscription = self.create_subscription(
+            String,
+            'mqtt_data',
+            self.mqtt_callback,
+            1)
 
         self.cmd = Twist()
 
@@ -50,40 +118,28 @@ class Navigation(Node):
         self.yaw = 0.0
         self.laser_range = np.array([])
         self.laser_forward = 0.0
-        self.odom_x = 0.0
-        self.odom_y = 0.0
-
-    def euler_from_quaternion(self, quaternion): 
-        """ 
-        Converts quaternion (w in last place) to euler roll, pitch, yaw 
-        quaternion = [x, y, z, w] 
-        Below should be replaced when porting for ROS2 Python tf_conversions is done. 
-        """ 
-        x = quaternion[0] 
-        y = quaternion[1] 
-        z = quaternion[2] 
-        w = quaternion[3] 
- 
-        sinr_cosp = 2 * (w * x + y * z) 
-        cosr_cosp = 1 - 2 * (x * x + y * y) 
-        roll = np.arctan2(sinr_cosp, cosr_cosp) 
- 
-        sinp = 2 * (w * y - z * x) 
-        pitch = np.arcsin(sinp) 
- 
-        siny_cosp = 2 * (w * z + x * y) 
-        cosy_cosp = 1 - 2 * (y * y + z * z) 
-        yaw = np.arctan2(siny_cosp, cosy_cosp) 
- 
-        return roll, pitch, yaw
+        self.mapbase = Pose().position
+        self.Xpos = 0
+        self.Ypos = 0
+        self.XposNoAdjust = 0
+        self.YposNoAdjust = 0
+        self.mazelayout = []
+        self.visitedarray = np.zeros((300,300),int)
+        self.previousaction = []
+        self.resolution = 0.05
+        self.Xadjust = 0
+        self.Yadjust = 0
+        self.waypoint_arr = np.genfromtxt(f_path)
+        self.mqtt_val = 0
     
-    def odom_callback(self, msg):
+    def map2base_callback(self, msg):
         
-        orientation_quat = msg.pose.pose.orientation
+        orientation_quat = msg.orientation
         quaternion = [orientation_quat.x, orientation_quat.y, orientation_quat.z, orientation_quat.w]
-        (self.roll, self.pitch, self.yaw) = self.euler_from_quaternion(quaternion)
-        self.odom_x = msg.pose.pose.position.x
-        self.odom_y = msg.pose.pose.position.y
+        (self.roll, self.pitch, self.yaw) = euler_from_quaternion(quaternion)
+        self.mapbase = msg.position
+        self.Xpos = msg.position.x
+        self.Ypos = msg.position.y
 
     def laser_callback(self, msg):
 
@@ -91,17 +147,52 @@ class Navigation(Node):
 
         self.laser_range[self.laser_range==0] = np.nan
 
+    def occ_callback(self, msg):
+        # self.get_logger().info('In occ_callback')
+        occdata = np.array(msg.data)
+        # compute histogram to identify bins with -1, values between 0 and below 50, 
+        # and values between 50 and 50. The binned_statistic function will also
+        # return the bin numbers so we can use that easily to create the image 
+        occ_counts, edges, binnum = scipy.stats.binned_statistic(occdata, np.nan, statistic='count', bins=occ_bins)
+        # get width and height of map
+        iwidth = msg.info.width
+        iheight = msg.info.height
+        # calculate total number of bins
+        total_bins = iwidth * iheight
+        # log the info
+        # self.get_logger().info('Unmapped: %i Unoccupied: %i Occupied: %i Total: %i' % (occ_counts[0], occ_counts[1], occ_counts[2], total_bins))
 
-    def stopbot(self):
+        # binnum go from 1 to 3 so we can use uint8
+        # convert into 2D array using column order
+        self.mazelayout = np.uint8(binnum.reshape(msg.info.height,msg.info.width))
 
-        if self.laser_range.size != 0: 
-            
-            lri = (self.laser_range[front_angle_range]<float(stop_distance)).nonzero()
-            if(len(lri[0])>0):
-                self.get_logger().info('Stopping the bot!') 
-                self.cmd.linear.x = 0.0
-                self.cmd.angular.z = 0.0
-                self.publisher_.publish(self.cmd)
+        self.Xpos = int(np.rint((self.mapbase.x - msg.info.origin.position.x)/self.resolution))
+        self.Ypos = int(np.rint((self.mapbase.y - msg.info.origin.position.y)/self.resolution))
+        self.mazelayout[self.Ypos][self.Xpos] = 6
+        # self.mazelayout[self.Ypos][self.Xpos - 5] = 10
+        self.XposNoAdjust = int(np.rint((self.mapbase.x + 5)/self.resolution))
+        self.YposNoAdjust = int(np.rint((self.mapbase.y + 5)/self.resolution))
+        self.Xadjust = msg.info.origin.position.x
+        self.Yadjust = msg.info.origin.position.y
+        img2 = Image.fromarray(self.mazelayout)
+        img = Image.fromarray(np.uint8(self.visitedarray.reshape(300,300)))
+        plt.imshow(img2, cmap='gray', origin='lower')
+        plt.draw_all()
+        # # pause to make sure the plot gets created
+        plt.pause(0.00000000001)
+
+    def mqtt_callback(self, msg):
+        # print("before decode", msg.data)
+        # data = msg.data.decode('UTF-8') # str has no attribute decode
+        data = msg.data
+        print("Received MQTT data:", data)
+        self.mqtt_val = int(data)
+        
+    def stopbot(self, delay):
+        self.cmd.linear.x = 0.0
+        self.cmd.angular.z = 0.0
+        self.publisher_.publish(self.cmd)
+        time.sleep(delay)
 
     
     def rotatebot(self, rot_angle):
@@ -155,131 +246,142 @@ class Navigation(Node):
         # stop the rotation
         self.publisher_.publish(self.cmd)
 
-    def MoveForward(self, y_coord):
+    def MoveForward(self, x_coord, y_coord):
         
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
-        
-        while (self.odom_y < y_coord):
+        self.get_logger().info('Moving Forward...')
+        while not ((self.mapbase.y < y_coord + box_thres and self.mapbase.y > y_coord - box_thres) and (self.mapbase.x < x_coord + box_thres and self.mapbase.x > x_coord - box_thres)):
             rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
+            # self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
             self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
-         
+        
         self.cmd.linear.x = 0.0
         self.publisher_.publish(self.cmd)
+    
+    def move_to_waypoint(self, WP_num):
+        x1, y1, x2, y2, current_yaw = self.Xpos, self.Ypos, self.waypoint_arr[WP_num][0], self.waypoint_arr[WP_num][1], self.yaw
+        yaw_difference, distance = calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw)
+        yaw_difference = yaw_difference / math.pi * 180
 
-    def MoveBackwards(self, y_coord):
-        
-        self.get_logger().info('I receive "%s"' % str(self.odom_y))
-        
-        while (self.odom_y > y_coord):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_y))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
+        print(f"To reach the point ({x2}, {y2}), the robot needs to turn {yaw_difference} degrees and travel {distance} units.")
 
-    def MoveRight(self, x_coord):
+        self.rotatebot(yaw_difference)
+        self.stopbot(0.1)
 
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
+        self.MoveForward(x2, y2)
+        self.stopbot(0.1)
 
-        
-        while (self.odom_x < x_coord):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
-
-    def MoveLeft(self, x_coord):
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
-        
-        while (self.odom_x > x_coord):
-            rclpy.spin_once(self)
-            self.get_logger().info('I receive "%s"' % str(self.odom_x))
-            self.cmd.linear.x = speed_change
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
-         
-        self.cmd.linear.x = 0.0
-        self.publisher_.publish(self.cmd)
-
-    def TurnRight(self):
-        
-        self.get_logger().info('Turning Right Now!')
-        self.rotatebot(-90.0)
-
-    def TurnLeft(self):
-        
-        self.get_logger().info('Turning Left Now!')
-        self.rotatebot(90.0)
-
-    def Turn180(self):
-        
-        self.get_logger().info('Turning Back Now!')
-        self.rotatebot(180.0)
-
-    def motion_callback(self):
-        self.get_logger().info('I receive "%s"' % str(self.odom_x))
-
-    def travel_to_waypoint(self, waypoint_num):
-        if waypoint_num == 8:
-            
-            self.MoveForward(1.85)
-
+        self.get_logger().info('Waypoint reached!')
 
     def motion(self):
         
         try:
-            waypoint_arr = np.genfromtxt('/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt', delimiter=' ')
-            # print(waypoint_arr)
             while rclpy.ok():
                 
-                table_num = 0
-                while table_num < 1 or table_num > 6:
-                    table_num = int(input("Enter a table number to deliver to: "))
-                    
-                # all these are the coordinates of the table where the turtlebot will be stopping at!
-                if (table_num == 1):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.travel_to_waypoint(8)
+                rclpy.spin_once(self)
 
-                    # self.MoveForward(1.85)
+                # To uncomment
+                print("current yaw = ", self.yaw)
+                print("current Xpos = ", self.Xpos)
+                print("current Ypos = ", self.Ypos)
+
+                print("Waiting for mqtt input...")
+                while self.mqtt_val == 0:
+                    rclpy.spin_once(self)
                 
+                table_num = self.mqtt_val
+                print("table_num received = ", table_num)
+                
+
+                if (table_num == 1):
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(15)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+
+
                 elif (table_num == 2):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.MoveForward(1.67)
-                    self.MoveRight(1.35)
-                
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(14)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+
                 elif (table_num == 3):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.MoveForward(1.01)
-                    self.MoveRight(0.96)
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(7)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
 
                 elif (table_num == 4):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.MoveForward(0.48)
-                    self.MoveRight(2.13)
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(6)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
 
                 elif (table_num == 5):
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.MoveForward(0.48)
-                    self.MoveRight(2.96)
-                    self.MoveLeftUp(1.86)
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(5)
 
-                else: # table_num == 6
-                    self.get_logger().info('Moving to table "%s"!' % str(table_num))
-                    self.MoveForward(1.67)
-                    self.MoveRight(2.03)
-                    self.MoveLeftUp(3.45)
-                    self.MoveLeft(1.08)
+                    # moving back to the dispenser
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+                
+                else: # table 6
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(11)
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(13)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(11)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+                
+                # To uncomment
         
         except Exception as e:
             print(e)
@@ -302,5 +404,3 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
-        
-

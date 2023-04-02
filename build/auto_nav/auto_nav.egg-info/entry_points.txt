@@ -1,0 +1,7 @@
+[console_scripts]
+hardcoded_navi_node1 = auto_nav.hardcoded_navi1:main
+hardcoded_navi_node2 = auto_nav.hardcoded_navi2:main
+map2base_node = auto_nav.map2base:main
+run_course = auto_nav.main:main
+set_waypoints = auto_nav.set_waypoints:main
+

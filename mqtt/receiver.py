@@ -2,7 +2,7 @@ import paho.mqtt.client as mqtt
 import rclpy
 from std_msgs.msg import String
 
-broker_address = "192.168.43.161"
+broker_address = "192.168.114.120"
 topic = "TableNum"
 
 def on_connect(client, userdata, flags, rc):

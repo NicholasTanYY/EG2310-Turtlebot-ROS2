@@ -16,16 +16,15 @@
 
 import rclpy
 from rclpy.node import Node
-import geometry_msgs.msg
 from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import numpy as np
 
-num_waypoints = 15
+num_waypoints = 17
 
 entries = 3
 arr=[]
-for i in range(num_waypoints+1):
+for i in range(num_waypoints):
     col = []
     for j in range(entries):
         col.append(0)
@@ -88,7 +87,7 @@ class Mover(Node):
             print("\nPress p once before setting waypoints\n")
 
             waypoint = 0
-            while waypoint < num_waypoints+1:
+            while waypoint < num_waypoints:
                 # get keyboard input
                 
                 rclpy.spin_once(self)
@@ -99,15 +98,17 @@ class Mover(Node):
                     # set the current point as a waypoint. Get the x and y coordinates as well as the value for yaw
                     # store in the format [x, y, yaw]
 
+                    rclpy.spin_once(self)
                     arr[waypoint][0] = self.pos_x
                     arr[waypoint][1] = self.pos_y
                     arr[waypoint][2] = self.yaw            
 
                     self.get_logger().info(f'Waypoint {waypoint} logged!')
-                    print(arr[1:])
+                    print(arr[waypoint])
+                    # print(arr[1:])
 
-                    if waypoint == 0:
-                        print("Ignore values above. Start plotting waypoints now.")
+                    # if waypoint == 0:
+                    #     print("Ignore values above. Start plotting waypoints now.")
                     waypoint += 1
                 
                 
@@ -118,8 +119,8 @@ class Mover(Node):
 		# Ctrl-c detected
         finally:
             # write to waypoint file
-            new_arr = arr[1:]        # debugging error for identical first 2 entries
-            waypoint_arr = np.array(new_arr)
+            # new_arr = arr[1:]        # debugging error for identical first 2 entries
+            waypoint_arr = np.array(arr)
             np.savetxt(f_path, waypoint_arr)
 
 
