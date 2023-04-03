@@ -20,7 +20,7 @@ from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import numpy as np
 
-num_waypoints = 17
+num_waypoints = 4
 
 entries = 3
 arr=[]

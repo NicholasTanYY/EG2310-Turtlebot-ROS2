@@ -22,9 +22,9 @@ setup(
         'console_scripts': [
             'run_course = auto_nav.main:main',
             'set_waypoints = auto_nav.set_waypoints:main',
-            'hardcoded_navi_node1 = auto_nav.hardcoded_navi1:main',
             'map2base_node = auto_nav.map2base:main',
-            'hardcoded_navi_node2 = auto_nav.hardcoded_navi2:main'
+            'sim_navi = auto_nav.sim_navi:main',
+            'actual_navi = auto_nav.actual_navi:main',
         ],
     },
 )

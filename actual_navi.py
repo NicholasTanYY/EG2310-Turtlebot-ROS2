@@ -15,14 +15,15 @@ from PIL import Image
 import scipy.stats
 import matplotlib.pyplot as plt
 
-rotate_change = 0.15
-speed_change= 0.15
+rotate_change = 0.25
+speed_change= 0.08
 front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
 box_thres = 0.13
-f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
+# f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
+f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
 
 def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
     """
@@ -294,87 +295,93 @@ class Navigation(Node):
                 print("table_num received = ", table_num)
                     
                 if (table_num == 1):
-                    # moving to the table
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(16)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(1)
                     self.move_to_waypoint(0)
-
-
-                elif (table_num == 2):
-                    # moving to the table
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(15)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(0)
-
-                elif (table_num == 3):
-                    # moving to the table
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(7)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(0)
-
-                elif (table_num == 4):
-                    # moving to the table
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(2)
-                    self.move_to_waypoint(6)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(2)
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(0)
-
-                elif (table_num == 5):
-                    # moving to the table
                     self.move_to_waypoint(1)
                     self.move_to_waypoint(2)
                     self.move_to_waypoint(3)
-                    self.move_to_waypoint(4)
-                    self.move_to_waypoint(5)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(4)
-                    self.move_to_waypoint(3)
-                    self.move_to_waypoint(2)
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(0)
                 
-                else: # table 6
-                    # moving to the table
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(10)
-                    self.move_to_waypoint(11)
-                    self.move_to_waypoint(12)
-                    self.move_to_waypoint(13)
-                    self.move_to_waypoint(14)
+                # if (table_num == 1):
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(16)
 
-                    # moving back to the dispenser
-                    self.move_to_waypoint(13)
-                    self.move_to_waypoint(12)
-                    self.move_to_waypoint(11)
-                    self.move_to_waypoint(10)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(1)
-                    self.move_to_waypoint(0)
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
+
+
+                # elif (table_num == 2):
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(15)
+
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
+
+                # elif (table_num == 3):
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(7)
+
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
+
+                # elif (table_num == 4):
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(2)
+                #     self.move_to_waypoint(6)
+
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(2)
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
+
+                # elif (table_num == 5):
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(2)
+                #     self.move_to_waypoint(3)
+                #     self.move_to_waypoint(4)
+                #     self.move_to_waypoint(5)
+
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(4)
+                #     self.move_to_waypoint(3)
+                #     self.move_to_waypoint(2)
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
+                
+                # else: # table 6
+                #     # moving to the table
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(10)
+                #     self.move_to_waypoint(11)
+                #     self.move_to_waypoint(12)
+                #     self.move_to_waypoint(13)
+                #     self.move_to_waypoint(14)
+
+                #     # moving back to the dispenser
+                #     self.move_to_waypoint(13)
+                #     self.move_to_waypoint(12)
+                #     self.move_to_waypoint(11)
+                #     self.move_to_waypoint(10)
+                #     self.move_to_waypoint(9)
+                #     self.move_to_waypoint(7)
+                #     self.move_to_waypoint(1)
+                #     self.move_to_waypoint(0)
                 
                 self.mqtt_val = 0       # reset the mqtt_val to 0
         

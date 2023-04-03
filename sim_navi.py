@@ -21,7 +21,7 @@ front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
-box_thres = 0.1
+box_thres = 0.13
 f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
 
 def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
@@ -40,8 +40,8 @@ def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
 
     # Calculate the difference between the current yaw and the target yaw
 
-    print("target_yaw = ", target_yaw)
-    print("current_yaw = ", current_yaw)
+    # print("target_yaw = ", target_yaw)
+    # print("current_yaw = ", current_yaw)
     yaw_difference = target_yaw - current_yaw
 
     # Normalize the yaw difference to between -pi and pi radians
@@ -201,7 +201,7 @@ class Navigation(Node):
         # get current yaw angle
         current_yaw = self.yaw
         # log the info
-        self.get_logger().info('Current: %f' % math.degrees(current_yaw))
+        # self.get_logger().info('Current: %f' % math.degrees(current_yaw))
         # we are going to use complex numbers to avoid problems when the angles go from
         # 360 to 0, or from -180 to 180
         c_yaw = complex(math.cos(current_yaw),math.sin(current_yaw))
@@ -209,7 +209,7 @@ class Navigation(Node):
         target_yaw = current_yaw + math.radians(rot_angle)
         # convert to complex notation
         c_target_yaw = complex(math.cos(target_yaw),math.sin(target_yaw))
-        self.get_logger().info('Desired: %f' % math.degrees(cmath.phase(c_target_yaw)))
+        # self.get_logger().info('Desired: %f' % math.degrees(cmath.phase(c_target_yaw)))
         # divide the two complex numbers to get the change in direction
         c_change = c_target_yaw / c_yaw
         # get the sign of the imaginary component to figure out which way we have to turn
@@ -219,12 +219,12 @@ class Navigation(Node):
         # set the direction to rotate
         self.cmd.angular.z = c_change_dir * rotate_change
         # start rotation
-        self.get_logger().info('I receive "%s"' % str(self.cmd.angular.z))
+        # self.get_logger().info('I receive "%s"' % str(self.cmd.angular.z))
         self.publisher_.publish(self.cmd)
 
         # we will use the c_dir_diff variable to see if we can stop rotating
         c_dir_diff = c_change_dir
-        self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
+        # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
         # if the rotation direction was 1.0, then we will want to stop when the c_dir_diff
         # becomes -1.0, and vice versa
         while(c_change_dir * c_dir_diff > 0):
@@ -240,7 +240,7 @@ class Navigation(Node):
             c_dir_diff = np.sign(c_change.imag)
             # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
 
-        self.get_logger().info('End Yaw: %f' % math.degrees(current_yaw))
+        # self.get_logger().info('End Yaw: %f' % math.degrees(current_yaw))
         # set the rotation speed to 0
         self.cmd.angular.z = 0.0
         # stop the rotation
@@ -264,7 +264,8 @@ class Navigation(Node):
         yaw_difference, distance = calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw)
         yaw_difference = yaw_difference / math.pi * 180
 
-        print(f"To reach the point ({x2}, {y2}), the robot needs to turn {yaw_difference} degrees and travel {distance} units.")
+        self.get_logger().info('Moving to waypoint %d' % WP_num)
+        # print(f"To reach the point ({x2}, {y2}), the robot needs to turn {yaw_difference} degrees and travel {distance} units.")
 
         self.rotatebot(yaw_difference)
         self.stopbot(0.1)
@@ -281,7 +282,6 @@ class Navigation(Node):
                 
                 rclpy.spin_once(self)
 
-                # To uncomment
                 print("current yaw = ", self.yaw)
                 print("current Xpos = ", self.Xpos)
                 print("current Ypos = ", self.Ypos)
@@ -293,62 +293,56 @@ class Navigation(Node):
                 table_num = self.mqtt_val
                 print("table_num received = ", table_num)
                 
-
                 if (table_num == 1):
                     # moving to the table
-                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(7)
-                    self.move_to_waypoint(8)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(16)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
+
+
+                elif (table_num == 2):
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(7)
                     self.move_to_waypoint(9)
                     self.move_to_waypoint(15)
 
                     # moving back to the dispenser
                     self.move_to_waypoint(9)
-                    self.move_to_waypoint(8)
                     self.move_to_waypoint(7)
-                    self.move_to_waypoint(2)
                     self.move_to_waypoint(1)
-
-
-                elif (table_num == 2):
-                    # moving to the table
-                    self.move_to_waypoint(2)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(8)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(10)
-                    self.move_to_waypoint(14)
-
-                    # moving back to the dispenser
-                    self.move_to_waypoint(10)
-                    self.move_to_waypoint(9)
-                    self.move_to_waypoint(8)
-                    self.move_to_waypoint(7)
-                    self.move_to_waypoint(2)
-                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
 
                 elif (table_num == 3):
                     # moving to the table
-                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(7)
 
                     # moving back to the dispenser
-                    self.move_to_waypoint(2)
                     self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
 
                 elif (table_num == 4):
                     # moving to the table
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(2)
-                    self.move_to_waypoint(3)
                     self.move_to_waypoint(6)
 
                     # moving back to the dispenser
-                    self.move_to_waypoint(3)
                     self.move_to_waypoint(2)
                     self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
 
                 elif (table_num == 5):
                     # moving to the table
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(2)
                     self.move_to_waypoint(3)
                     self.move_to_waypoint(4)
@@ -359,29 +353,30 @@ class Navigation(Node):
                     self.move_to_waypoint(3)
                     self.move_to_waypoint(2)
                     self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
                 
                 else: # table 6
                     # moving to the table
-                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(7)
-                    self.move_to_waypoint(8)
                     self.move_to_waypoint(9)
                     self.move_to_waypoint(10)
                     self.move_to_waypoint(11)
                     self.move_to_waypoint(12)
                     self.move_to_waypoint(13)
+                    self.move_to_waypoint(14)
 
                     # moving back to the dispenser
+                    self.move_to_waypoint(13)
                     self.move_to_waypoint(12)
                     self.move_to_waypoint(11)
                     self.move_to_waypoint(10)
                     self.move_to_waypoint(9)
-                    self.move_to_waypoint(8)
                     self.move_to_waypoint(7)
-                    self.move_to_waypoint(2)
                     self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
                 
-                # To uncomment
+                self.mqtt_val = 0       # reset the mqtt_val to 0
         
         except Exception as e:
             print(e)
