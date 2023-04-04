@@ -6,7 +6,8 @@ from nav_msgs.msg import Odometry
 from sensor_msgs.msg import LaserScan
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 from nav_msgs.msg import OccupancyGrid
-from std_msgs.msg import String
+from std_msgs.msg import String, Bool
+from custom_msgs.msg import Button
 import math
 import numpy as np
 import cmath
@@ -15,13 +16,13 @@ from PIL import Image
 import scipy.stats
 import matplotlib.pyplot as plt
 
-rotate_change = 0.25
-speed_change= 0.08
+box_thres = 0.13
+rotate_change = 0.35
+speed_change= 0.10
 front_angle = 30
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
-box_thres = 0.13
 # f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/confirmed_waypoints.txt'
 f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_log.txt'
 
@@ -111,6 +112,16 @@ class Navigation(Node):
             'mqtt_data',
             self.mqtt_callback,
             1)
+        
+        self.button_subscription = self.create_subscription(
+            Button,
+            'button_pressed',
+            self.button_callback,
+            10)
+        self.buttonpressed = False
+
+        self.node = rclpy.create_node('button_subscriber')
+        self.node.create_subscription(Bool, 'button_pressed', self.button_callback, 10)
 
         self.cmd = Twist()
 
@@ -183,11 +194,17 @@ class Navigation(Node):
         plt.pause(0.00000000001)
 
     def mqtt_callback(self, msg):
-        # print("before decode", msg.data)
-        # data = msg.data.decode('UTF-8') # str has no attribute decode
         data = msg.data
         print("Received MQTT data:", data)
         self.mqtt_val = int(data)
+
+    def button_callback(self, msg):
+        if msg.data:
+            print("Button pressed!")
+            self.get_logger().info('In button_callback')
+            self.buttonpressed = True
+        # else:
+        #     print("Button released")
         
     def stopbot(self, delay):
         self.cmd.linear.x = 0.0
@@ -275,17 +292,28 @@ class Navigation(Node):
         self.stopbot(0.1)
 
         self.get_logger().info('Waypoint reached!')
+    
+    def wait_for_button_press(self):
+        print("Waiting for button press...")
+        while not self.buttonpressed:
+            rclpy.spin_once(self.node)
+
+    def wait_for_button_release(self):
+        print("Waiting for button release")
+        while self.buttonpressed:       # add more later? to check if the button is pressed or something
+            rclpy.spin_once(self.node)
+        print("Button released.")
 
     def motion(self):
         
         try:
             while rclpy.ok():
-                
-                rclpy.spin_once(self)
 
                 print("current yaw = ", self.yaw)
                 print("current Xpos = ", self.Xpos)
                 print("current Ypos = ", self.Ypos)
+                
+                self.wait_for_button_press()
 
                 print("Waiting for mqtt input...")
                 while self.mqtt_val == 0:
@@ -294,95 +322,99 @@ class Navigation(Node):
                 table_num = self.mqtt_val
                 print("table_num received = ", table_num)
                     
+                # if (table_num == 1):
+                #     self.move_to_waypoint(0)
+
+                #     self.wait_for_button_release()
+
+                #     self.move_to_waypoint(1)
+                
                 if (table_num == 1):
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(16)
+
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(1)
                     self.move_to_waypoint(0)
+
+
+                elif (table_num == 2):
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(15)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
+
+                elif (table_num == 3):
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(7)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
+
+                elif (table_num == 4):
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(6)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
+
+                elif (table_num == 5):
+                    # moving to the table
                     self.move_to_waypoint(1)
                     self.move_to_waypoint(2)
                     self.move_to_waypoint(3)
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(5)
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
                 
-                # if (table_num == 1):
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(16)
+                else: # table 6
+                    # moving to the table
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(11)
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(13)
+                    self.move_to_waypoint(14)
 
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
-
-
-                # elif (table_num == 2):
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(15)
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
-
-                # elif (table_num == 3):
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(7)
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
-
-                # elif (table_num == 4):
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(6)
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
-
-                # elif (table_num == 5):
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(3)
-                #     self.move_to_waypoint(4)
-                #     self.move_to_waypoint(5)
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(4)
-                #     self.move_to_waypoint(3)
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
+                    # moving back to the dispenser
+                    self.move_to_waypoint(13)
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(11)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(7)
+                    self.move_to_waypoint(1)
+                    self.move_to_waypoint(0)
                 
-                # else: # table 6
-                #     # moving to the table
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(10)
-                #     self.move_to_waypoint(11)
-                #     self.move_to_waypoint(12)
-                #     self.move_to_waypoint(13)
-                #     self.move_to_waypoint(14)
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(13)
-                #     self.move_to_waypoint(12)
-                #     self.move_to_waypoint(11)
-                #     self.move_to_waypoint(10)
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(7)
-                #     self.move_to_waypoint(1)
-                #     self.move_to_waypoint(0)
-                
+                self.buttonpressed = False  # reset the buttonpressed to False
                 self.mqtt_val = 0       # reset the mqtt_val to 0
         
         except Exception as e:
