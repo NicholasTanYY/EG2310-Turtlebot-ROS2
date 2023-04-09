@@ -27,7 +27,7 @@ class Map2Base(Node):
         self.tf_listener = TransformListener(self.tf_buffer,self, spin_thread=True)
         self.mapbase = None
         self.map2base = self.create_publisher(Pose, '/map2base', 10)
-        timer_period = 0.05
+        timer_period = 0.005
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
     def timer_callback(self):

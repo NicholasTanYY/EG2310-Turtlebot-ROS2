@@ -20,7 +20,7 @@ from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import numpy as np
 
-num_waypoints = 2
+num_waypoints = 1
 
 entries = 3
 arr=[]
@@ -31,6 +31,7 @@ for i in range(num_waypoints):
     arr.append(col)
 
 f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/waypoint_log.txt'
+# f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/actual_waypoints.txt'
 
 def euler_from_quaternion(quaternion): 
     """ 
@@ -105,10 +106,6 @@ class Mover(Node):
 
                     self.get_logger().info(f'Waypoint {waypoint} logged!')
                     print(arr[waypoint])
-                    # print(arr[1:])
-
-                    # if waypoint == 0:
-                    #     print("Ignore values above. Start plotting waypoints now.")
                     waypoint += 1
                 
                 
@@ -119,7 +116,6 @@ class Mover(Node):
 		# Ctrl-c detected
         finally:
             # write to waypoint file
-            # new_arr = arr[1:]        # debugging error for identical first 2 entries
             waypoint_arr = np.array(arr)
             np.savetxt(f_path, waypoint_arr)
 
