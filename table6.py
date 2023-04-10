@@ -31,7 +31,7 @@ speed_change= 0.10
 
 dist_threshold = 0.30        # Distance threshold for the robot to stop in front of the pail
 front_angle = 3
-front_angle_6 = 10
+front_angle_6 = 80
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
@@ -97,8 +97,10 @@ class Navigation(Node):
         self.roll = 0.0
         self.pitch = 0.0
         self.yaw = 0.0
-        self.laser_range = np.array([])
-        self.laser_range_6 = np.array([])
+        self.laser_range = np.zeros((2*front_angle+1,))
+        self.laser_range_6 = np.zeros((2*front_angle_6+1,))
+        # self.laser_range = np.array([])
+        # self.laser_range_6 = np.array([])
         self.laser_forward = 0.0
         self.mapbase = Pose().position
         self.x_coordinate = 0
@@ -116,6 +118,7 @@ class Navigation(Node):
         self.mqtt_val = 0
         self.x_coordinate = 0.0
         self.y_coordinate = 0.0
+        self.table6_turn_angle = 0
     
     def map2base_callback(self, msg):
         
@@ -138,19 +141,34 @@ class Navigation(Node):
         # print("Ypos = ", self.y_coordinate)
 
     def laser_callback(self, msg):
-        self.laser_range = np.array(msg.ranges)
 
+        self.laser_range = np.array(msg.ranges[0:front_angle] + msg.ranges[-front_angle:])
+        self.laser_range_6 = np.array(msg.ranges[0:front_angle_6] + msg.ranges[-front_angle_6:])
         self.laser_range[self.laser_range==0] = np.nan
+        self.laser_range_6[self.laser_range_6==0] = np.nan
 
-        # take only the front 6 degrees of the laser scan.
-        self.laser_range = self.laser_range[0:front_angle] + self.laser_range[-front_angle:]
-
-        # take the front 160 degrees of laser scan
-        self.laser_range_6 = self.laser_range[0:front_angle_6] + self.laser_range[-front_angle_6:]
-        print("Laser range 6 = ", self.laser_range_6)
-        # take the average of the laser readings
+        # print("Laser range = ", self.laser_range)
+        # print("Laser range 6 = ", self.laser_range_6)
+        
         self.laser_forward = np.nanmean(self.laser_range) / 2
-        # self.get_logger().info('Laser forward: %f' % self.laser_forward)
+
+        # Calculate angle of minimum range value
+        min_range_index = np.nanargmin(self.laser_range_6)
+        min_range = self.laser_range_6[min_range_index]
+        min_range_angle = (min_range_index - front_angle_6) * msg.angle_increment
+
+        # Convert angle to degrees and print result
+        if min_range_angle < 0:
+            min_range_angle_degrees = -(front_angle_6 + math.degrees(min_range_angle))
+        else:
+            min_range_angle_degrees = front_angle_6 - math.degrees(min_range_angle)
+
+        # convert min_range_angle_degrees to radians
+        min_range_angle_degrees = math.radians(min_range_angle_degrees)
+        
+        print("Angle to turn: ", min_range_angle_degrees)
+        self.table6_turn_angle = min_range_angle_degrees
+
 
     def occ_callback(self, msg):
         # self.get_logger().info('In occ_callback')
@@ -219,7 +237,6 @@ class Navigation(Node):
         # start rotation
         # self.get_logger().info('I receive "%s"' % str(self.cmd.angular.z))
         self.publisher_.publish(self.cmd)
-
         # we will use the c_dir_diff variable to see if we can stop rotating
         c_dir_diff = c_change_dir
         # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
@@ -243,6 +260,7 @@ class Navigation(Node):
         self.cmd.angular.z = 0.0
         # stop the rotation
         self.publisher_.publish(self.cmd)
+        # self.get_logger().info('End rotatebot')
 
     def MoveForward(self, x_coord, y_coord):
         
@@ -260,7 +278,6 @@ class Navigation(Node):
     def move_close(self):
         # scan the front of the robot to check the distance to the pail
         print("Moving closer to the pail...")
-        print(self.laser_forward)
         while self.laser_forward > dist_threshold:
             rclpy.spin_once(self)
             self.cmd.linear.x = speed_change
@@ -271,40 +288,22 @@ class Navigation(Node):
         self.publisher_.publish(self.cmd)
 
     def move_to_table6(self):
-        # find the shortest distance from the robot to table 6 based on self.laser_range_6
-        # shortest_dist = np.min(self.laser_range_6)
-
-        # get angle where the shortest distance is measured
-        shortest_idx = np.nanargmin(self.laser_range_6)
-        # shortest_idx = np.nanmean(self.laser_range) / 2
-        # print("Shortest distance: ", shortest_dist)
-        print("Shortest index: ", shortest_idx)
         # turn to that angle
-        # self.rotatebot(shortest_idx)
-        # self.move_close()
+        # self.rotatebot(self.table6_turn_angle)
+        # self.stopbot(0.1)
+
+        self.move_close()
 
     def motion(self):
         
         try:
             while rclpy.ok():
-
-                # print("current yaw = ", self.yaw)
-                # print("current Xpos = ", self.x_coordinate)
-                # print("current Ypos = ", self.y_coordinate)
-                # reset the mqtt_val to 0
-
-                # move to table 6
+                rclpy.spin_once(self)
+            # move to table 6
                 self.move_to_table6()
         
         except Exception as e:
             print(e)
-
-        # Ctrl-c detected
-        finally:
-        	# stop moving
-            self.cmd.linear.x = 0.0
-            self.cmd.angular.z = 0.0
-            self.publisher_.publish(self.cmd)
 
 
 def main(args=None):
@@ -312,7 +311,7 @@ def main(args=None):
     rclpy.init(args=args)
     hardcoded_navi_node = Navigation()
     hardcoded_navi_node.motion()
-    rclpy.spin(hardcoded_navi_node)
+    # rclpy.spin(hardcoded_navi_node)
     hardcoded_navi_node.destroy_node()
     rclpy.shutdown()
 

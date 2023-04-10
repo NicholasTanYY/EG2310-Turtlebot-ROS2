@@ -20,7 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'run_course = auto_nav.main:main',
+            'run_course = auto_nav.table6:main',
             'set_waypoints = auto_nav.set_waypoints:main',
             'map2base_node = auto_nav.map2base:main',
             'sim_navi = auto_nav.sim_navi:main',
