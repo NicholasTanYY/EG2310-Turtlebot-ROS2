@@ -149,7 +149,7 @@ class FactoryTest(Node):
             if time.time() - timenow > button_test_duration:
                 for i in [3,2,1]:
                     self.clear()
-                    print("button is NOT functional or has not been pressed,\nproceeding to the firing test in " + str(i) + " ...")
+                    print("button is NOT functional or has not been pressed,\nproceeding to the ultrasonic test in " + str(i) + " ...")
                     time.sleep(1)
                 done = True
 
@@ -157,13 +157,18 @@ class FactoryTest(Node):
         done = False
         timenow = time.time()
         button_test_duration = 20
+        self.clear()
         while not done:
-            self.clear()
-            print("press the button to test, you have  20 seconds to test the ultrasonic sensor\n" + str(int(time.time() - timenow)))
-            rclpy.spin_once(self)
-            time.sleep(5)
-            print("ultrasonic sensor is functional,\n proceeding to the servo test in " + str(i) + " ...")
-            time.sleep(1)
+            for i in [5,4,3,2,1]:
+                self.clear()
+                print("you have  20 seconds to test the ultrasonic sensor\n" + str(i) + "...")
+                rclpy.spin_once(self)
+                time.sleep(1)
+            for i in [3,2,1]:
+                self.clear()
+                print("ultrasonic sensor is functional,\n proceeding to the servo test in " + str(i) + " ...")
+                time.sleep(1)
+            break
 
     def servotest(self):
         done = False
