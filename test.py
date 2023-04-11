@@ -65,6 +65,8 @@ class Navigation(Node):
             'scan', 
             self.laser_callback, 
             qos_profile=qos_profile_sensor_data)
+
+        self.yaw = 0.0
         
     def map2base_callback(self, msg):
         
@@ -141,6 +143,8 @@ class Navigation(Node):
             c_dir_diff = np.sign(c_change.imag)
             # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
 
+            print(current_yaw)
+
         # self.get_logger().info('End Yaw: %f' % math.degrees(current_yaw))
         # set the rotation speed to 0
         self.cmd.angular.z = 0.0
@@ -161,14 +165,40 @@ class Navigation(Node):
 
     def testing(self):
         self.rotatebot(math.degrees(-self.yaw))  
+    
+    def stopbot(self, delay):
+        self.cmd.linear.x = 0.0
+        self.cmd.angular.z = 0.0
+        self.publisher_.publish(self.cmd)
+        time.sleep(delay)
+
+    def move_robot(self):
+        while rclpy.ok():
+            try:
+                rclpy.spin_once(self)
+                self.rotatebot(40)
+                self.stopbot(0.1)
+                self.rotatebot(40)
+                self.stopbot(0.1)
+            # time.sleep(3)   
+            except Exception as e:
+                print(e)
+
+            # Ctrl-c detected
+            finally:
+                # stop moving
+                self.cmd.linear.x = 0.0
+                self.cmd.angular.z = 0.0
+                self.publisher_.publish(self.cmd)
+
+
 
 def main(args=None):
 
     rclpy.init(args=args)
     hardcoded_navi_node = Navigation()
     #hardcoded_navi_node.Clocking()
-    hardcoded_navi_node.rotatebot(40)
-    time.sleep(3)
+    hardcoded_navi_node.move_robot()
     #hardcoded_navi_node.testing() 
     hardcoded_navi_node.destroy_node()
     rclpy.shutdown()

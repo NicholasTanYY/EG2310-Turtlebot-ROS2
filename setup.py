@@ -24,7 +24,7 @@ setup(
             'set_waypoints = auto_nav.set_waypoints:main',
             'map2base_node = auto_nav.map2base:main',
             'sim_navi = auto_nav.sim_navi:main',
-            #'actual_navi = auto_nav.actual_navi:main',
+            'actual_navi = auto_nav.actual_navi:main',
             'button_listener = auto_nav.button_listener:main',
             'beep = auto_nav.beep:main',
         ],

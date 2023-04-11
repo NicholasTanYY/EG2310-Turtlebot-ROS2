@@ -20,7 +20,7 @@ from geometry_msgs.msg import Pose
 from rclpy.qos import ReliabilityPolicy, QoSProfile
 import numpy as np
 
-num_waypoints = 4
+num_waypoints = 2
 
 entries = 3
 arr=[]
@@ -30,8 +30,9 @@ for i in range(num_waypoints):
         col.append(0)
     arr.append(col)
 
-f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/waypoint_log.txt'
+# f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/waypoint_log.txt'
 # f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/actual_waypoints.txt'
+f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/test_waypoints.txt'
 
 def euler_from_quaternion(quaternion): 
     """ 
