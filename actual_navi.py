@@ -188,6 +188,8 @@ class Navigation(Node):
         self.laser_range[self.laser_range==0] = np.nan
         self.laser_range_6[self.laser_range_6==0] = np.nan
         self.laser_angle_increment = msg.angle_increment
+        #// self.laser_forward = np.nanmean(self.laser_range) / 2
+        self.laser_forward_6 = np.nanmean(self.laser_range_6) / 2
 
         # print("Laser range = ", self.laser_range)
         # print("Laser range 6 = ", self.laser_range_6)
@@ -221,10 +223,10 @@ class Navigation(Node):
         self.get_logger().info('In rotatebot')
         
         rotation_speed = 0
-        if abs(rot_angle) < math.pi / 6:
-            rotation_speed = slow_rotate_change
-        else:
-            rotation_speed = rotate_change
+        ##//if abs(rot_angle) < 30:
+        #    rotation_speed = slow_rotate_change
+        #else:
+        #    rotation_speed = rotate_change
         # get current yaw angle
         current_yaw = self.yaw
         # log the info
@@ -383,7 +385,7 @@ class Navigation(Node):
         while self.laser_forward > dist_threshold:
             rclpy.spin_once(self)
             # print("Moving ...")
-            self.cmd.linear.x = speed_change
+            ##// self.cmd.linear.x = speed_change
             self.cmd.angular.z = 0.0
             self.publisher_.publish(self.cmd)
         
@@ -422,8 +424,7 @@ class Navigation(Node):
         # print("Laser range = ", self.laser_range)
         # print("Laser range 6 = ", self.laser_range_6)
         
-        self.laser_forward = np.nanmean(self.laser_range) / 2
-        self.laser_forward_6 = np.nanmean(self.laser_range_6) / 2
+        
 
         # Calculate angle of minimum range value
         min_range_index = np.nanargmin(self.laser_range_6)
@@ -442,14 +443,14 @@ class Navigation(Node):
         # print("Angle to turn: ", min_range_angle_degrees)
         self.table6_turn_angle = min_range_angle_degrees
 
-        self.rotatebot(-self.yaw)
+        #//self.rotatebot(math.degrees(-self.yaw))     # try this
         self.move_close()
 
     def dock(self):
         self.move_to_waypoint(1)
         self.move_to_waypoint(18)
         self.move_to_waypoint(0)
-        self.rotatebot(-self.yaw)
+        #//self.rotatebot(-self.yaw)
 
     def motion(self):
         
