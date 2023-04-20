@@ -27,6 +27,7 @@ setup(
             'actual_navi = auto_nav.actual_navi:main',
             'button_listener = auto_nav.button_listener:main',
             'beep = auto_nav.beep:main',
+            'factory_test = auto_nav.factorytest:main'
         ],
     },
 )
