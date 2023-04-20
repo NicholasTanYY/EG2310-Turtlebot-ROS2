@@ -11,24 +11,12 @@ from std_msgs.msg import String, Bool
 from custom_msgs.msg import Button
 import math
 import numpy as np
-import cmath
 import time
-from PIL import Image
-import scipy.stats
-import matplotlib.pyplot as plt
-
-# box_thres = 0.15
-# rotate_change = 0.60
-# speed_change= 0.17
 
 box_thres = 0.15
 rotate_change = 0.35
 slow_rotate_change = 0.10
 speed_change= 0.10
-
-# box_thres = 0.13
-# rotate_change = 0.15
-# speed_change= 0.05
 
 time_threshold = 1.28 * box_thres / speed_change
 dispenser_dist_threshold = 0.60
@@ -276,57 +264,6 @@ class Navigation(Node):
         # stop the rotation
         self.publisher_.publish(self.cmd)
 
-    # def rotate_slow(self, rot_angle):
-    #     self.get_logger().info('In rotate_slow')
-        
-    #     # get current yaw angle
-    #     current_yaw = self.yaw
-    #     # log the info
-    #     # self.get_logger().info('Current: %f' % math.degrees(current_yaw))
-    #     # we are going to use complex numbers to avoid problems when the angles go from
-    #     # 360 to 0, or from -180 to 180
-    #     c_yaw = complex(math.cos(current_yaw),math.sin(current_yaw))
-    #     # calculate desired yaw
-    #     target_yaw = current_yaw + math.radians(rot_angle)
-    #     # convert to complex notation
-    #     c_target_yaw = complex(math.cos(target_yaw),math.sin(target_yaw))
-    #     # self.get_logger().info('Desired: %f' % math.degrees(cmath.phase(c_target_yaw)))
-    #     # divide the two complex numbers to get the change in direction
-    #     c_change = c_target_yaw / c_yaw
-    #     # get the sign of the imaginary component to figure out which way we have to turn
-    #     c_change_dir = np.sign(c_change.imag)
-    #     # set linear speed to zero so the TurtleBot rotates on the spot
-    #     self.cmd.linear.x = 0.0
-    #     # set the direction to rotate
-    #     self.cmd.angular.z = c_change_dir * slow_rotate_change
-    #     # start rotation
-    #     # self.get_logger().info('I receive "%s"' % str(self.cmd.angular.z))
-    #     self.publisher_.publish(self.cmd)
-
-    #     # we will use the c_dir_diff variable to see if we can stop rotating
-    #     c_dir_diff = c_change_dir
-    #     # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
-    #     # if the rotation direction was 1.0, then we will want to stop when the c_dir_diff
-    #     # becomes -1.0, and vice versa
-    #     while(c_change_dir * c_dir_diff > 0):
-    #         # allow the callback functions to run
-    #         rclpy.spin_once(self)
-    #         current_yaw = self.yaw
-    #         # convert the current yaw to complex form
-    #         c_yaw = complex(math.cos(current_yaw),math.sin(current_yaw))
-    #         # self.get_logger().info('Current Yaw: %f' % math.degrees(current_yaw))
-    #         # get difference in angle between current and target
-    #         c_change = c_target_yaw / c_yaw
-    #         # get the sign to see if we can stop
-    #         c_dir_diff = np.sign(c_change.imag)
-    #         # self.get_logger().info('c_change_dir: %f c_dir_diff: %f' % (c_change_dir, c_dir_diff))
-
-    #     # self.get_logger().info('End Yaw: %f' % math.degrees(current_yaw))
-    #     # set the rotation speed to 0
-    #     self.cmd.angular.z = 0.0
-    #     # stop the rotation
-    #     self.publisher_.publish(self.cmd)
-
     def MoveForward(self, x_coord, y_coord):
         
         self.get_logger().info('Moving Forward...')
@@ -372,23 +309,6 @@ class Navigation(Node):
 
     def reverse_to_waypoint1(self):
 
-        # x1, y1, x2, y2, current_yaw = self.x_coordinate, self.y_coordinate, self.waypoint_arr[1][0], self.waypoint_arr[1][1], self.yaw
-        # yaw_difference, distance = calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw)
-        # yaw_difference = yaw_difference / math.pi * 180
-
-        # self.get_logger().info('Moving to waypoint 1')
-
-        # if yaw_difference < 0:
-        #     yaw_difference = 180 + yaw_difference
-        # else:
-        #     yaw_difference = 180 - yaw_difference
-        # self.rotatebot(yaw_difference)
-        # self.stopbot(0.1)
-
-        # self.Reverse(x2, y2)
-        # self.stopbot(0.1)
-        # self.get_logger().info('Waypoint 1 reached!')
-
         x2, y2 = self.waypoint_arr[1][0], self.waypoint_arr[1][1]
         self.get_logger().info('Moving to waypoint 1')
         self.Reverse(x2, y2)
@@ -408,19 +328,6 @@ class Navigation(Node):
         
         self.cmd.linear.x = 0.0
         self.publisher_.publish(self.cmd)
-    
-    # def align_dispenser(self):
-    #     # scan the front of the robot to check the distance to the pail
-    #     print("Aligning to dispenser...")
-    #     print(self.laser_forward)
-    #     while self.laser_forward > dispenser_dist_threshold:
-    #         rclpy.spin_once(self)
-    #         self.cmd.linear.x = speed_change
-    #         self.cmd.angular.z = 0.0
-    #         self.publisher_.publish(self.cmd)
-        
-    #     self.cmd.linear.x = 0.0
-    #     self.publisher_.publish(self.cmd)
     
     def wait_for_button_press(self):
         print("Waiting for button press...")
@@ -489,14 +396,6 @@ class Navigation(Node):
                 table_num = self.mqtt_val
                 print("table_num received = ", table_num)
                 self.reverse_to_waypoint1()
-                # self.move_to_waypoint(1)
-
-                # testing code
-                # if (table_num == 1):
-                #     self.move_to_waypoint(1)
-                #     self.move_close()
-                #     self.wait_for_button_release()
-                #     self.move_to_waypoint(0)
 
                 if (table_num == 1):
                     # moving to the table
@@ -509,8 +408,6 @@ class Navigation(Node):
 
                     # moving back to the dispenser
                     self.move_to_waypoint(9)
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
 
                 elif (table_num == 2):
@@ -525,8 +422,6 @@ class Navigation(Node):
 
                     # moving back to the dispenser
                     self.move_to_waypoint(9)
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
 
                 elif (table_num == 3):
@@ -538,8 +433,6 @@ class Navigation(Node):
                     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
                     # moving back to the dispenser
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
 
                 elif (table_num == 4):
@@ -553,8 +446,6 @@ class Navigation(Node):
 
                     # moving back to the dispenser
                     self.move_to_waypoint(2)
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
 
                 elif (table_num == 5):
@@ -572,8 +463,6 @@ class Navigation(Node):
                     self.move_to_waypoint(4)
                     self.move_to_waypoint(3)
                     self.move_to_waypoint(2)
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
                 
                 else: # table 6
@@ -591,14 +480,7 @@ class Navigation(Node):
                     self.move_to_waypoint(13)
                     self.move_to_waypoint(12)
                     self.move_to_waypoint(17)
-                    # self.move_to_waypoint(1)
-                    # self.move_to_waypoint(0)
                     self.dock()
-
-                # if table_num == 6:
-                #     self.move_to_table6()
-                #     self.wait_for_button_release()
-                #     self.move_to_waypoint(0)
                 
                 self.buttonpressed = False  # reset the buttonpressed to False
                 self.mqtt_val = 0       # reset the mqtt_val to 0

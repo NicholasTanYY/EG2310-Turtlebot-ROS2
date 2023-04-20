@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import serial
 import time
 
@@ -11,7 +13,7 @@ class BeepNode(Node):
         super().__init__('beep_node')
 
         self.serial_port = '/dev/ttyACM0'
-        self.baud_rate = 115200
+        self.baud_rate = 57600
 
         self.ser = serial.Serial(self.serial_port, self.baud_rate, timeout=1)
 
@@ -38,3 +40,4 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+
