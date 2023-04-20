@@ -35,13 +35,13 @@ dispenser_dist_threshold = 0.60
 dist_threshold = 0.30        # Distance threshold for the robot to stop in front of the pail
 initial_yaw = 0.0
 front_angle = 3
-front_angle_6 = 80
+front_angle_6 = 65
 front_angle_range = range(-front_angle,front_angle+1,1)
 stop_distance = 0.25
 occ_bins = [-1, 0, 50, 101]
 # f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/waypoint_log.txt'
-# f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/actual_waypoints.txt'
-f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/test_waypoints.txt'
+f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/actual_waypoints.txt'
+# f_path = '/home/nicholas/colcon_ws/src/auto_nav/auto_nav/waypoint_logging/test_waypoints.txt'
 
 def calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw):
     """
@@ -362,7 +362,6 @@ class Navigation(Node):
         self.get_logger().info('Moving to waypoint %d' % WP_num)
         # print(f"To reach the point ({x2}, {y2}), the robot needs to turn {yaw_difference} degrees and travel {distance} units.")
 
-        print("here")
         self.rotatebot(yaw_difference)
         self.stopbot(0.1)
 
@@ -372,18 +371,35 @@ class Navigation(Node):
         self.get_logger().info('Waypoint reached!')
 
     def reverse_to_waypoint1(self):
+
+        # x1, y1, x2, y2, current_yaw = self.x_coordinate, self.y_coordinate, self.waypoint_arr[1][0], self.waypoint_arr[1][1], self.yaw
+        # yaw_difference, distance = calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw)
+        # yaw_difference = yaw_difference / math.pi * 180
+
+        # self.get_logger().info('Moving to waypoint 1')
+
+        # if yaw_difference < 0:
+        #     yaw_difference = 180 + yaw_difference
+        # else:
+        #     yaw_difference = 180 - yaw_difference
+        # self.rotatebot(yaw_difference)
+        # self.stopbot(0.1)
+
+        # self.Reverse(x2, y2)
+        # self.stopbot(0.1)
+        # self.get_logger().info('Waypoint 1 reached!')
+
         x2, y2 = self.waypoint_arr[1][0], self.waypoint_arr[1][1]
         self.get_logger().info('Moving to waypoint 1')
         self.Reverse(x2, y2)
         self.stopbot(0.1)
-
-        self.get_logger().info('Waypoint reached!')
+        self.get_logger().info('Waypoint 1 reached!')
 
     def move_close(self):
         # scan the front of the robot to check the distance to the pail
         print("Moving closer to the pail...")
         print(self.laser_forward)
-        while self.laser_forward > dist_threshold:
+        while self.laser_forward > dist_threshold/1.8:
             rclpy.spin_once(self)
             # print("Moving ...")
             self.cmd.linear.x = speed_change
@@ -439,15 +455,21 @@ class Navigation(Node):
         # print("Angle to turn: ", min_range_angle_degrees)
         self.table6_turn_angle = min_range_angle_degrees
 
-        self.rotatebot(self.table6_turn_angle)
+        print("Turning to table 6...")
+        print("Angle to turn: ", self.table6_turn_angle)
+        self.rotatebot(-self.table6_turn_angle)
 
-        # self.move_close()
+        self.move_close()
 
     def dock(self):
         self.move_to_waypoint(1)
         self.move_to_waypoint(18)
         self.move_to_waypoint(0)
         self.rotatebot(-self.yaw)
+
+    def face_front(self):
+        rotation_angle = ((-(math.pi / 2) ) - self.yaw)
+        self.rotatebot(math.degrees(rotation_angle))
 
     def motion(self):
         
@@ -466,8 +488,8 @@ class Navigation(Node):
                 
                 table_num = self.mqtt_val
                 print("table_num received = ", table_num)
-                # self.reverse_to_waypoint1()
-                self.move_to_waypoint(1)
+                self.reverse_to_waypoint1()
+                # self.move_to_waypoint(1)
 
                 # testing code
                 # if (table_num == 1):
@@ -476,102 +498,107 @@ class Navigation(Node):
                 #     self.wait_for_button_release()
                 #     self.move_to_waypoint(0)
 
-                # if (table_num == 1):
-                #     # moving to the table
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(16)
-                #     self.move_close()
+                if (table_num == 1):
+                    # moving to the table
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(16)
+                    self.face_front()
+                    self.move_close()
 
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(9)
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
 
-                # elif (table_num == 2):
-                #     # moving to the table
-                #     self.move_to_waypoint(9)
-                #     self.move_to_waypoint(10)
-                #     self.move_to_waypoint(15)
-                #     self.move_close()
+                elif (table_num == 2):
+                    # moving to the table
+                    self.move_to_waypoint(9)
+                    self.move_to_waypoint(10)
+                    self.move_to_waypoint(15)
+                    self.face_front()
+                    self.move_close()
 
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(9)
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
+                    # moving back to the dispenser
+                    self.move_to_waypoint(9)
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
 
-                # elif (table_num == 3):
-                #     # moving to the table
-                #     self.move_to_waypoint(7)
-                #     self.move_close()
+                elif (table_num == 3):
+                    # moving to the table
+                    self.move_to_waypoint(7)
+                    self.face_front()
+                    self.move_close()
 
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
-                #     # moving back to the dispenser
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
+                    # moving back to the dispenser
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
 
-                # elif (table_num == 4):
-                #     # moving to the table
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(6)
-                #     self.move_close()
+                elif (table_num == 4):
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(6)
+                    self.face_front()
+                    self.move_close()
 
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(2)
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
+                    # moving back to the dispenser
+                    self.move_to_waypoint(2)
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
 
-                # elif (table_num == 5):
-                #     # moving to the table
-                #     self.move_to_waypoint(2)
-                #     self.move_to_waypoint(3)
-                #     self.move_to_waypoint(4)
-                #     self.move_to_waypoint(5)
-                #     self.move_close()
+                elif (table_num == 5):
+                    # moving to the table
+                    self.move_to_waypoint(2)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(5)
+                    self.face_front()
+                    self.move_close()
 
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
 
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(4)
-                #     self.move_to_waypoint(3)
-                #     self.move_to_waypoint(2)
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
+                    # moving back to the dispenser
+                    self.move_to_waypoint(4)
+                    self.move_to_waypoint(3)
+                    self.move_to_waypoint(2)
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
                 
-                # else: # table 6
-                #     # moving to the table
-                #     self.move_to_waypoint(17)
-                #     self.move_to_waypoint(12)
-                #     self.move_to_waypoint(13)
-                #     self.move_to_waypoint(14)
-                #     self.move_to_table6()
-
-                #     self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
-
-                #     # moving back to the dispenser
-                #     self.move_to_waypoint(14)
-                #     self.move_to_waypoint(13)
-                #     self.move_to_waypoint(12)
-                #     self.move_to_waypoint(17)
-                #     # self.move_to_waypoint(1)
-                #     # self.move_to_waypoint(0)
-                #     self.dock()
-
-                if table_num == 6:
+                else: # table 6
+                    # moving to the table
+                    self.move_to_waypoint(17)
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(13)
+                    self.move_to_waypoint(14)
                     self.move_to_table6()
-                    self.wait_for_button_release()
-                    self.move_to_waypoint(0)
+
+                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+
+                    # moving back to the dispenser
+                    self.move_to_waypoint(14)
+                    self.move_to_waypoint(13)
+                    self.move_to_waypoint(12)
+                    self.move_to_waypoint(17)
+                    # self.move_to_waypoint(1)
+                    # self.move_to_waypoint(0)
+                    self.dock()
+
+                # if table_num == 6:
+                #     self.move_to_table6()
+                #     self.wait_for_button_release()
+                #     self.move_to_waypoint(0)
                 
                 self.buttonpressed = False  # reset the buttonpressed to False
                 self.mqtt_val = 0       # reset the mqtt_val to 0
