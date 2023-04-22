@@ -404,7 +404,7 @@ class Navigation(Node):
                     self.face_front()
                     self.move_close()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()
 
                     # moving back to the dispenser
                     self.move_to_waypoint(9)
@@ -418,7 +418,7 @@ class Navigation(Node):
                     self.face_front()
                     self.move_close()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()
 
                     # moving back to the dispenser
                     self.move_to_waypoint(9)
@@ -430,7 +430,7 @@ class Navigation(Node):
                     self.face_front()
                     self.move_close()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()
 
                     # moving back to the dispenser
                     self.dock()
@@ -442,7 +442,7 @@ class Navigation(Node):
                     self.face_front()
                     self.move_close()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()
 
                     # moving back to the dispenser
                     self.move_to_waypoint(2)
@@ -457,7 +457,7 @@ class Navigation(Node):
                     self.face_front()
                     self.move_close()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release() 
 
                     # moving back to the dispenser
                     self.move_to_waypoint(4)
@@ -473,7 +473,7 @@ class Navigation(Node):
                     self.move_to_waypoint(14)
                     self.move_to_table6()
 
-                    self.wait_for_button_release()       # wait for button press to confirm that the robot has reached the table
+                    self.wait_for_button_release()
 
                     # moving back to the dispenser
                     self.move_to_waypoint(14)
