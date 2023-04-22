@@ -2,9 +2,6 @@ import paho.mqtt.client as mqtt
 import rclpy
 from std_msgs.msg import String
 
-broker_address = "192.168.59.120"
-topic = "TableNum"
-
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code "+str(rc))
     client.subscribe(topic)
@@ -19,9 +16,12 @@ def on_message(client, userdata, msg):
 
 def on_log(client, userdata, level, buf):
     print("Log: ", buf)
-    
+
+broker_address = "192.168.59.120"
+topic = "TableNum"
+
 rclpy.init()
-node = rclpy.create_node("mqtt_subscriber")
+node = rclpy.create_node("mqtt_mobile")
 pub = node.create_publisher(String, "mqtt_data", 10)
 client = mqtt.Client()
 client.on_connect = on_connect
