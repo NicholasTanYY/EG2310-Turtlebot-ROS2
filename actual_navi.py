@@ -20,7 +20,7 @@ speed_change= 0.10
 
 time_threshold = 1.28 * box_thres / speed_change
 dispenser_dist_threshold = 0.60
-dist_threshold = 0.30        # Distance threshold for the robot to stop in front of the pail
+dist_threshold = 0.18        # Distance threshold for the robot to stop in front of the pail
 initial_yaw = 0.0
 front_angle = 3
 front_angle_6 = 65
@@ -267,7 +267,8 @@ class Navigation(Node):
     def MoveForward(self, x_coord, y_coord):
         
         self.get_logger().info('Moving Forward...')
-        while not ((self.mapbase.y < y_coord + box_thres and self.mapbase.y > y_coord - box_thres) and (self.mapbase.x < x_coord + box_thres and self.mapbase.x > x_coord - box_thres)):
+        while not ((self.mapbase.y < y_coord + box_thres and self.mapbase.y > y_coord - box_thres) 
+                   and (self.mapbase.x < x_coord + box_thres and self.mapbase.x > x_coord - box_thres)):
             rclpy.spin_once(self)
             # self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
             self.cmd.linear.x = speed_change
@@ -281,7 +282,8 @@ class Navigation(Node):
     def Reverse(self, x_coord, y_coord):
         
         self.get_logger().info('Reversing...')
-        while not ((self.mapbase.y < y_coord + box_thres and self.mapbase.y > y_coord - box_thres) and (self.mapbase.x < x_coord + box_thres and self.mapbase.x > x_coord - box_thres)):
+        while not ((self.mapbase.y < y_coord + box_thres and self.mapbase.y > y_coord - box_thres) 
+                   and (self.mapbase.x < x_coord + box_thres and self.mapbase.x > x_coord - box_thres)):
             rclpy.spin_once(self)
             # self.get_logger().info('I receive "%s"' % str(self.mapbase.y))
             self.cmd.linear.x = -speed_change
@@ -292,12 +294,12 @@ class Navigation(Node):
         self.publisher_.publish(self.cmd)
     
     def move_to_waypoint(self, WP_num):
-        x1, y1, x2, y2, current_yaw = self.x_coordinate, self.y_coordinate, self.waypoint_arr[WP_num][0], self.waypoint_arr[WP_num][1], self.yaw
+        x1, y1, x2, y2, current_yaw = self.x_coordinate, self.y_coordinate, 
+        self.waypoint_arr[WP_num][0], self.waypoint_arr[WP_num][1], self.yaw
         yaw_difference, distance = calculate_yaw_and_distance(x1, y1, x2, y2, current_yaw)
         yaw_difference = yaw_difference / math.pi * 180
 
         self.get_logger().info('Moving to waypoint %d' % WP_num)
-        # print(f"To reach the point ({x2}, {y2}), the robot needs to turn {yaw_difference} degrees and travel {distance} units.")
 
         self.rotatebot(yaw_difference)
         self.stopbot(0.1)
@@ -319,7 +321,7 @@ class Navigation(Node):
         # scan the front of the robot to check the distance to the pail
         print("Moving closer to the pail...")
         print(self.laser_forward)
-        while self.laser_forward > dist_threshold/1.8:
+        while self.laser_forward > dist_threshold:
             rclpy.spin_once(self)
             # print("Moving ...")
             self.cmd.linear.x = speed_change
