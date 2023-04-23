@@ -17,9 +17,7 @@ box_thres = 0.15
 rotate_change = 0.35
 slow_rotate_change = 0.10
 speed_change= 0.10
-
 time_threshold = 1.28 * box_thres / speed_change
-dispenser_dist_threshold = 0.60
 dist_threshold = 0.18        # Distance threshold for the robot to stop in front of the pail
 initial_yaw = 0.0
 front_angle = 3
