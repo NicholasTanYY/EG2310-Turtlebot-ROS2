@@ -2,7 +2,7 @@
 
 ### Overview
 
-This is a ROS2 project on building engineering systems which solve tasks in real-world scenarios. The mission is for the Turtlebot to deliver a can from a fixed dispenser to a specific table autonomously in a simulated restaurant environment. To accomplish this robotic system, my team and I devised the following subsystems: Dispenser Storage, Dispatching, Turtlebot Load-sensing Holder and Turtlebot Navigation. More information in "documents>>Final Assessment Rubrics"
+This is a ROS2 project on building engineering systems which solve tasks in real-world scenarios. The mission is for the Turtlebot to deliver a can from a fixed dispenser to a specific table autonomously in a simulated restaurant environment. To accomplish this robotic system, my team and I devised the following subsystems: Dispenser Storage, Dispatching, Turtlebot Load-sensing Holder and Turtlebot Navigation. More information in the [Final Assessment Rubrics](/documents/EG2310%20Final%20Assessment%20rubrics.pdf)
 
 ### Conceptual Design
 
@@ -17,4 +17,4 @@ This is a ROS2 project on building engineering systems which solve tasks in real
 
 ### Other information
 
-More information can be found in the "documents" tab. For full details on our project and setup instructions, view our [final report]().
+More information can be found in the "documents" tab. For full details on our project and setup instructions, view our [Final Report](/documents/EG2310_G10_FinalReport.pdf).
